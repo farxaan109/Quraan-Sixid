@@ -401,7 +401,9 @@ function startRecording() {
       }
       document.getElementById('live-transcript').textContent = finalTranscript + interim;
     };
-    recognition.onerror = () => {};
+    recognition.onerror = (event) => {
+      console.warn('Speech recognition error:', event.error);
+    };
     recognition.start();
   }
 
@@ -448,6 +450,14 @@ async function analyzeWithAI() {
       })
     });
     const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error('Gemini API خطأ: ' + (data.error?.message || res.status));
+    }
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error('Gemini لم يعطِ جواباً');
+    }
+
     const txt = data.candidates[0].content.parts[0].text;
     const parsed = JSON.parse(txt.replace(/```json|```/g, "").trim());
 
@@ -466,7 +476,8 @@ async function analyzeWithAI() {
 
     showResults(parsed, target);
   } catch(e) {
-    showError();
+    console.error('Analysis error:', e);
+    showError(e.message || 'خطأ غير معروف');
   }
 }
 
@@ -526,10 +537,11 @@ function showResults(r, target) {
   document.getElementById('result-card').scrollIntoView({ behavior: 'smooth' });
 }
 
-function showError() {
+function showError(msg) {
   document.getElementById('spinner').style.display = 'none';
   document.getElementById('spinner-label').style.display = 'none';
-  alert('حدث خطأ. تأكد من إذن الميكروفون وحاول مرة أخرى.');
+  console.error('Show error called:', msg);
+  alert('حدث خطأ: ' + (msg || 'تأكد من إذن الميكروفون وحاول مرة أخرى.'));
   resetAll();
 }
 
