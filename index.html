@@ -430,23 +430,25 @@ async function analyzeWithAI() {
   const spoken = document.getElementById('live-transcript').textContent || finalTranscript || "";
   const target = getTargetText();
 
-  const system = `أنت متخصص في تحليل أخطاء قراءة القرآن في الحروف المتشابهة.
+  const prompt = `أنت متخصص في تحليل أخطاء قراءة القرآن في الحروف المتشابهة.
 قارن بين النص الصحيح والمقروء وحدد أخطاء الحروف المتشابهة فقط مثل:
 ص↔س↔ث، ط↔ت↔ظ، ض↔ظ↔ذ، د↔ذ، ح↔ه↔خ، ع↔غ، ق↔ك
-أجب فقط بـ JSON بدون أي نص آخر:
+النص الصحيح: "${target}"
+المقروء: "${spoken || '(غير واضح)'}"
+أجب فقط بـ JSON بدون أي نص آخر أو backticks:
 {"correct_words":[],"errors":[{"position":0,"expected":"","spoken":"","confused_pair":["",""],"tip":""}],"overall":"","score":0,"praise":""}`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCkJIdrw8zTSSsznWPaBv3zXyvii3Yu6fY", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", max_tokens: 1000, system,
-        messages: [{ role: "user", content: `النص الصحيح: "${target}"\nالمقروء: "${spoken || '(غير واضح)'}"` }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1 }
       })
     });
     const data = await res.json();
-    const txt = data.content.map(i => i.text || "").join("");
+    const txt = data.candidates[0].content.parts[0].text;
     const parsed = JSON.parse(txt.replace(/```json|```/g, "").trim());
 
     // Save to Firebase
