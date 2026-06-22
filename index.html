@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مدرّب التلاوة</title>
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue, query, orderByChild, limitToLast }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    databaseURL: "https://quraan-sixid-7b13a-default-rtdb.firebaseio.com"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  // Save session to Firebase
+  window.saveToFirebase = async function(data) {
+    try {
+      await push(ref(db, 'sessions'), data);
+    } catch(e) { console.error('Firebase save error', e); }
+  };
+
+  // Load last 10 sessions
+  window.loadHistory = function(callback) {
+    const q = query(ref(db, 'sessions'), orderByChild('timestamp'), limitToLast(10));
+    onValue(q, snap => {
+      const items = [];
+      snap.forEach(child => items.unshift({ id: child.key, ...child.val() }));
+      callback(items);
+    });
+  };
+</script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(ellipse at top, #1a0533 0%, #0a0a1a 60%, #000510 100%);
+    font-family: 'Segoe UI', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 16px 40px;
+    color: #e8d5b7;
+  }
+  .header { text-align: center; margin-bottom: 20px; margin-top: 8px; }
+  .header .icon { font-size: 36px; margin-bottom: 6px; }
+  .header h1 { color: #d4af7a; font-size: 22px; font-weight: 800; letter-spacing: 2px; font-family: 'Amiri', serif; }
+  .header p { color: #7a6a55; font-size: 12px; margin-top: 6px; }
+
+  /* Tabs */
+  .tabs {
+    width: 100%; max-width: 640px;
+    display: flex; gap: 8px; margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1; padding: 10px; border-radius: 12px;
+    border: 1px solid rgba(212,175,122,0.25);
+    background: transparent; color: #7a6a55;
+    font-size: 13px; cursor: pointer; transition: all 0.2s;
+  }
+  .tab.active {
+    background: rgba(212,175,122,0.15);
+    border-color: rgba(212,175,122,0.5);
+    color: #d4af7a; font-weight: 700;
+  }
+
+  .card {
+    width: 100%; max-width: 640px;
+    background: rgba(212,175,122,0.06);
+    border: 1px solid rgba(212,175,122,0.2);
+    border-radius: 18px; padding: 20px; margin-bottom: 16px;
+  }
+  .card-label { color: #d4af7a; font-size: 13px; font-weight: 600; margin-bottom: 12px; display: block; }
+  select {
+    width: 100%; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(212,175,122,0.25); border-radius: 10px;
+    color: #d4af7a; font-size: 13px; padding: 10px 14px;
+    direction: rtl; outline: none; margin-bottom: 14px; cursor: pointer;
+  }
+  .ayah-display { background: rgba(212,175,122,0.04); border-radius: 12px; padding: 18px 20px; text-align: center; }
+  .ayah-text { color: #e8d5b7; font-size: 26px; font-family: 'Amiri', serif; line-height: 2; letter-spacing: 1px; }
+  .ayah-ref { color: #7a6a55; font-size: 11px; margin-top: 8px; }
+
+  .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .toggle-btn {
+    background: transparent; border: 1px solid rgba(212,175,122,0.4);
+    color: #d4af7a; border-radius: 8px; padding: 4px 12px; font-size: 12px; cursor: pointer;
+  }
+  textarea {
+    width: 100%; min-height: 80px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(212,175,122,0.25);
+    border-radius: 10px; color: #e8d5b7; font-size: 20px; padding: 12px 14px;
+    resize: vertical; direction: rtl; text-align: right; outline: none;
+    font-family: 'Amiri', serif; line-height: 2;
+  }
+
+  .rec-card {
+    width: 100%; max-width: 640px;
+    background: rgba(212,175,122,0.04);
+    border: 1px solid rgba(212,175,122,0.15);
+    border-radius: 18px; padding: 24px; margin-bottom: 16px;
+    text-align: center; transition: border-color 0.3s;
+  }
+  .rec-card.active { border-color: rgba(231,76,60,0.5); }
+
+  .mic-btn {
+    width: 90px; height: 90px; border-radius: 50%;
+    border: 3px solid #d4af7a; background: rgba(212,175,122,0.1);
+    color: #d4af7a; font-size: 36px; cursor: pointer;
+    margin: 0 auto 10px; display: flex; align-items: center; justify-content: center;
+  }
+  .stop-btn {
+    width: 90px; height: 90px; border-radius: 50%;
+    border: 3px solid #e74c3c; background: rgba(231,76,60,0.15);
+    color: #e74c3c; font-size: 32px; cursor: pointer;
+    margin: 0 auto 10px; display: flex; align-items: center; justify-content: center;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(231,76,60,0.3)}
+    50%{transform:scale(1.04);box-shadow:0 0 0 12px rgba(231,76,60,0)}
+  }
+  .hint { color: #7a6a55; font-size: 13px; margin-bottom: 18px; }
+  .rec-label { color: #e74c3c; font-size: 12px; margin-top: 10px; }
+
+  .waves { display: flex; justify-content: center; gap: 5px; align-items: center; margin-bottom: 18px; height: 36px; }
+  .wave-bar { width: 4px; background: #e74c3c; border-radius: 2px; animation: waveAnim 0.6s ease-in-out infinite alternate; }
+  .wave-bar:nth-child(1){animation-delay:0s;height:10px}
+  .wave-bar:nth-child(2){animation-delay:.1s;height:22px}
+  .wave-bar:nth-child(3){animation-delay:.2s;height:30px}
+  .wave-bar:nth-child(4){animation-delay:.3s;height:18px}
+  .wave-bar:nth-child(5){animation-delay:.4s;height:26px}
+  @keyframes waveAnim { to { transform: scaleY(2.5); } }
+
+  .live-transcript {
+    color: #c0a882; font-size: 16px; direction: rtl; margin-bottom: 16px;
+    font-family: 'Amiri', serif; min-height: 30px;
+    background: rgba(255,255,255,0.03); border-radius: 8px; padding: 8px 14px; display: none;
+  }
+  .spinner {
+    width: 60px; height: 60px; border-radius: 50%;
+    border: 3px solid transparent; border-top: 3px solid #d4af7a;
+    margin: 0 auto 16px; animation: spin 0.8s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner-label { color: #7a6a55; font-size: 14px; display: none; }
+
+  .result-card {
+    width: 100%; max-width: 640px;
+    background: rgba(212,175,122,0.04); border: 1px solid rgba(212,175,122,0.2);
+    border-radius: 18px; padding: 24px; margin-bottom: 16px; display: none;
+  }
+  .score-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; direction: rtl; }
+  .overall-label { color: #d4af7a; font-size: 18px; font-weight: 700; font-family: 'Amiri', serif; margin-bottom: 4px; }
+  .praise { color: #7a6a55; font-size: 13px; }
+  .err-count { color: #c0392b; font-size: 13px; margin-top: 4px; }
+
+  .highlighted-ayah {
+    text-align: center; direction: rtl; margin-bottom: 20px;
+    padding: 16px 10px; background: rgba(0,0,0,0.2);
+    border-radius: 14px; line-height: 3; font-family: 'Amiri', serif; font-size: 24px;
+  }
+  .word-ok {
+    display: inline-block; margin: 3px 5px; padding: 4px 12px; border-radius: 10px;
+    background: rgba(39,174,96,0.2); border: 2px solid rgba(39,174,96,0.5);
+    color: #69f0ae; position: relative;
+  }
+  .word-err {
+    display: inline-block; margin: 3px 5px; padding: 4px 12px; border-radius: 10px;
+    background: rgba(231,76,60,0.25); border: 2px solid rgba(231,76,60,0.7);
+    color: #ff8a80; box-shadow: 0 0 12px rgba(231,76,60,0.3); position: relative;
+  }
+  .word-neutral {
+    display: inline-block; margin: 3px 5px; padding: 4px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.07); border: 2px solid transparent; color: #e8d5b7;
+  }
+  .badge {
+    position: absolute; top: -8px; right: -8px; width: 18px; height: 18px;
+    border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; color: #fff;
+  }
+  .badge-err { background: #e74c3c; }
+  .badge-ok  { background: #27ae60; }
+
+  .error-list { display: flex; flex-direction: column; gap: 10px; }
+  .error-item {
+    background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3);
+    border-radius: 12px; padding: 12px 16px; direction: rtl;
+  }
+  .error-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .tag-wrong { background: rgba(231,76,60,0.2); color: #ff8a80; padding: 3px 12px; border-radius: 8px; font-family: 'Amiri', serif; font-size: 18px; }
+  .tag-right { background: rgba(39,174,96,0.2); color: #69f0ae; padding: 3px 12px; border-radius: 8px; font-family: 'Amiri', serif; font-size: 18px; }
+  .confused-pair { color: #f39c12; font-size: 16px; font-family: 'Amiri', serif; margin-right: auto; }
+  .tip { color: #9a8a7a; font-size: 12px; }
+  .success-msg { text-align: center; padding: 20px; color: #69f0ae; font-size: 18px; font-family: 'Amiri', serif; }
+  .retry-btn {
+    margin-top: 20px; width: 100%; padding: 12px 0; border-radius: 12px;
+    border: 1px solid rgba(212,175,122,0.4); background: rgba(212,175,122,0.08);
+    color: #d4af7a; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .score-ring { flex-shrink: 0; }
+
+  /* History */
+  .history-panel { width: 100%; max-width: 640px; display: none; flex-direction: column; gap: 12px; }
+  .history-item {
+    background: rgba(212,175,122,0.06); border: 1px solid rgba(212,175,122,0.15);
+    border-radius: 14px; padding: 14px 16px; direction: rtl;
+  }
+  .history-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .history-ayah { color: #e8d5b7; font-family: 'Amiri', serif; font-size: 17px; }
+  .history-score-badge {
+    padding: 3px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
+  }
+  .history-meta { color: #7a6a55; font-size: 11px; margin-top: 4px; }
+  .history-errors { color: #ff8a80; font-size: 12px; margin-top: 6px; }
+  .empty-history { text-align: center; color: #7a6a55; padding: 40px 0; font-size: 14px; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="icon">🕌</div>
+  <h1>مدرّب التلاوة</h1>
+  <p>اقرأ الآية ثم اعرف أين أخطأت في الحروف</p>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('practice')">📖 التدريب</button>
+  <button class="tab" onclick="showTab('history')">📊 سجل التقدم</button>
+</div>
+
+<!-- ===== PRACTICE TAB ===== -->
+<div id="tab-practice" style="width:100%;max-width:640px;">
+
+  <!-- Ayah Selector -->
+  <div class="card">
+    <div class="top-row">
+      <span class="card-label" style="margin-bottom:0">اختر الآية</span>
+      <button class="toggle-btn" onclick="toggleCustom()">نص مخصص</button>
+    </div>
+    <div id="selector-area">
+      <select id="ayah-select" onchange="onAyahChange()">
+        <option value="0">الفاتحة ١ — بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</option>
+        <option value="1">الفاتحة ٢ — الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ</option>
+        <option value="2">الفاتحة ٣ — الرَّحْمَٰنِ الرَّحِيمِ</option>
+        <option value="3">الفاتحة ٤ — مَالِكِ يَوْمِ الدِّينِ</option>
+        <option value="4">الفاتحة ٥ — إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ</option>
+        <option value="5">الفاتحة ٦ — اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ</option>
+        <option value="6">الفاتحة ٧ — صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ</option>
+        <option value="7">الإخلاص ١ — قُلْ هُوَ اللَّهُ أَحَدٌ</option>
+        <option value="8">الإخلاص ٢ — اللَّهُ الصَّمَدُ</option>
+        <option value="9">الإخلاص ٣ — لَمْ يَلِدْ وَلَمْ يُولَدْ</option>
+        <option value="10">الكوثر ١ — إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ</option>
+        <option value="11">الكوثر ٢ — فَصَلِّ لِرَبِّكَ وَانْحَرْ</option>
+        <option value="12">الناس ١ — قُلْ أَعُوذُ بِرَبِّ النَّاسِ</option>
+        <option value="13">الناس ٢ — مَلِكِ النَّاسِ</option>
+        <option value="14">الناس ٣ — إِلَٰهِ النَّاسِ</option>
+      </select>
+      <div class="ayah-display">
+        <div class="ayah-text" id="ayah-text">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+        <div class="ayah-ref" id="ayah-ref">سورة الفاتحة ﴿١﴾</div>
+      </div>
+    </div>
+    <div id="custom-area" class="hidden">
+      <textarea id="custom-input" placeholder="اكتب النص الذي تريد قراءته..." oninput="onCustomChange()"></textarea>
+    </div>
+  </div>
+
+  <!-- Recording -->
+  <div class="rec-card" id="rec-card">
+    <div class="hint" id="rec-hint">اضغط الزر، اقرأ الآية، ثم أوقف التسجيل</div>
+    <div class="waves hidden" id="waves">
+      <div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+    </div>
+    <div class="live-transcript" id="live-transcript"></div>
+    <div class="spinner" id="spinner"></div>
+    <div class="spinner-label" id="spinner-label">جاري تحليل القراءة...</div>
+    <button class="mic-btn" id="mic-btn" onclick="startRecording()">🎤</button>
+    <button class="stop-btn hidden" id="stop-btn" onclick="stopRecording()">⏹</button>
+    <div class="rec-label hidden" id="rec-label">🔴 جاري التسجيل... اضغط للإيقاف</div>
+    <div style="color:#5a4a35;font-size:11px;margin-top:10px" id="start-label">ابدأ التسجيل</div>
+  </div>
+
+  <!-- Results -->
+  <div class="result-card" id="result-card">
+    <div class="score-row">
+      <div>
+        <div class="overall-label" id="overall-label"></div>
+        <div class="praise" id="praise-label"></div>
+        <div class="err-count" id="err-count"></div>
+      </div>
+      <svg class="score-ring" width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="7"/>
+        <circle id="score-arc" cx="40" cy="40" r="34" fill="none"
+          stroke="#27ae60" stroke-width="7" stroke-linecap="round"
+          stroke-dasharray="213.6" stroke-dashoffset="213.6"
+          transform="rotate(-90 40 40)" style="transition:stroke-dashoffset 1s ease"/>
+        <text id="score-text" x="40" y="40" text-anchor="middle"
+          dominant-baseline="central" fill="#27ae60" font-size="18" font-weight="bold">0</text>
+      </svg>
+    </div>
+    <div class="highlighted-ayah" id="highlighted-ayah"></div>
+    <div class="error-list" id="error-list"></div>
+    <div class="success-msg hidden" id="success-msg">ما شاء الله! لا أخطاء في الحروف 🌟</div>
+    <button class="retry-btn" onclick="resetAll()">🔄 أعد القراءة</button>
+  </div>
+
+</div>
+
+<!-- ===== HISTORY TAB ===== -->
+<div id="tab-history" style="width:100%;max-width:640px;display:none;">
+  <div class="history-panel" id="history-panel" style="display:flex;">
+    <div class="empty-history" id="empty-history">⏳ جاري تحميل السجل...</div>
+  </div>
+</div>
+
+<script>
+const AYAHS = [
+  { surah:"الفاتحة", ayah:1, text:"بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ" },
+  { surah:"الفاتحة", ayah:2, text:"الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ" },
+  { surah:"الفاتحة", ayah:3, text:"الرَّحْمَٰنِ الرَّحِيمِ" },
+  { surah:"الفاتحة", ayah:4, text:"مَالِكِ يَوْمِ الدِّينِ" },
+  { surah:"الفاتحة", ayah:5, text:"إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ" },
+  { surah:"الفاتحة", ayah:6, text:"اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ" },
+  { surah:"الفاتحة", ayah:7, text:"صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ" },
+  { surah:"الإخلاص", ayah:1, text:"قُلْ هُوَ اللَّهُ أَحَدٌ" },
+  { surah:"الإخلاص", ayah:2, text:"اللَّهُ الصَّمَدُ" },
+  { surah:"الإخلاص", ayah:3, text:"لَمْ يَلِدْ وَلَمْ يُولَدْ" },
+  { surah:"الكوثر", ayah:1, text:"إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ" },
+  { surah:"الكوثر", ayah:2, text:"فَصَلِّ لِرَبِّكَ وَانْحَرْ" },
+  { surah:"الناس", ayah:1, text:"قُلْ أَعُوذُ بِرَبِّ النَّاسِ" },
+  { surah:"الناس", ayah:2, text:"مَلِكِ النَّاسِ" },
+  { surah:"الناس", ayah:3, text:"إِلَٰهِ النَّاسِ" },
+];
+
+let useCustom = false;
+let currentAyah = AYAHS[0];
+let recognition = null;
+let mediaRecorder = null;
+let finalTranscript = "";
+
+function showTab(tab) {
+  document.getElementById('tab-practice').style.display = tab === 'practice' ? 'block' : 'none';
+  document.getElementById('tab-history').style.display  = tab === 'history'  ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0 && tab==='practice') || (i===1 && tab==='history'));
+  });
+  if (tab === 'history') loadHistoryUI();
+}
+
+function getTargetText() {
+  return useCustom ? document.getElementById('custom-input').value.trim() : currentAyah.text;
+}
+
+function toggleCustom() {
+  useCustom = !useCustom;
+  document.getElementById('selector-area').classList.toggle('hidden', useCustom);
+  document.getElementById('custom-area').classList.toggle('hidden', !useCustom);
+  document.querySelector('.toggle-btn').textContent = useCustom ? '← آيات جاهزة' : 'نص مخصص';
+  resetAll();
+}
+
+function onAyahChange() {
+  const idx = parseInt(document.getElementById('ayah-select').value);
+  currentAyah = AYAHS[idx];
+  document.getElementById('ayah-text').textContent = currentAyah.text;
+  document.getElementById('ayah-ref').textContent = `سورة ${currentAyah.surah} ﴿${currentAyah.ayah}﴾`;
+  resetAll();
+}
+function onCustomChange() { resetAll(); }
+
+function startRecording() {
+  finalTranscript = "";
+  document.getElementById('result-card').style.display = 'none';
+  document.getElementById('rec-card').classList.add('active');
+  document.getElementById('mic-btn').classList.add('hidden');
+  document.getElementById('stop-btn').classList.remove('hidden');
+  document.getElementById('waves').classList.remove('hidden');
+  document.getElementById('rec-label').classList.remove('hidden');
+  document.getElementById('start-label').classList.add('hidden');
+  document.getElementById('rec-hint').classList.add('hidden');
+  document.getElementById('live-transcript').style.display = 'block';
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) {
+    recognition = new SR();
+    recognition.lang = 'ar-SA';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (e) => {
+      let interim = '';
+      finalTranscript = '';
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      document.getElementById('live-transcript').textContent = finalTranscript + interim;
+    };
+    recognition.onerror = () => {};
+    recognition.start();
+  }
+
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.onstop = () => stream.getTracks().forEach(t => t.stop());
+    mediaRecorder.start(100);
+  }).catch(() => {});
+}
+
+function stopRecording() {
+  if (recognition) recognition.stop();
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+
+  document.getElementById('stop-btn').classList.add('hidden');
+  document.getElementById('waves').classList.add('hidden');
+  document.getElementById('rec-label').classList.add('hidden');
+  document.getElementById('live-transcript').style.display = 'none';
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('spinner-label').style.display = 'block';
+
+  setTimeout(() => analyzeWithAI(), 800);
+}
+
+async function analyzeWithAI() {
+  const spoken = document.getElementById('live-transcript').textContent || finalTranscript || "";
+  const target = getTargetText();
+
+  const system = `أنت متخصص في تحليل أخطاء قراءة القرآن في الحروف المتشابهة.
+قارن بين النص الصحيح والمقروء وحدد أخطاء الحروف المتشابهة فقط مثل:
+ص↔س↔ث، ط↔ت↔ظ، ض↔ظ↔ذ، د↔ذ، ح↔ه↔خ، ع↔غ، ق↔ك
+أجب فقط بـ JSON بدون أي نص آخر:
+{"correct_words":[],"errors":[{"position":0,"expected":"","spoken":"","confused_pair":["",""],"tip":""}],"overall":"","score":0,"praise":""}`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6", max_tokens: 1000, system,
+        messages: [{ role: "user", content: `النص الصحيح: "${target}"\nالمقروء: "${spoken || '(غير واضح)'}"` }]
+      })
+    });
+    const data = await res.json();
+    const txt = data.content.map(i => i.text || "").join("");
+    const parsed = JSON.parse(txt.replace(/```json|```/g, "").trim());
+
+    // Save to Firebase
+    if (window.saveToFirebase) {
+      window.saveToFirebase({
+        ayah: target,
+        surah: useCustom ? 'نص مخصص' : `${currentAyah.surah} ${currentAyah.ayah}`,
+        spoken: spoken,
+        score: parsed.score || 0,
+        errors: parsed.errors || [],
+        overall: parsed.overall || '',
+        timestamp: Date.now()
+      });
+    }
+
+    showResults(parsed, target);
+  } catch(e) {
+    showError();
+  }
+}
+
+function showResults(r, target) {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('spinner-label').style.display = 'none';
+  document.getElementById('rec-card').classList.remove('active');
+  document.getElementById('start-label').classList.remove('hidden');
+  document.getElementById('rec-hint').classList.remove('hidden');
+  document.getElementById('mic-btn').classList.remove('hidden');
+
+  const score = r.score || 0;
+  const color = score >= 85 ? '#27ae60' : score >= 60 ? '#f39c12' : '#e74c3c';
+  const circ = 2 * Math.PI * 34;
+  document.getElementById('score-arc').style.strokeDashoffset = circ * (1 - score/100);
+  document.getElementById('score-arc').setAttribute('stroke', color);
+  document.getElementById('score-text').textContent = score;
+  document.getElementById('score-text').setAttribute('fill', color);
+  document.getElementById('overall-label').textContent = r.overall || '';
+  document.getElementById('praise-label').textContent = r.praise || '';
+  document.getElementById('err-count').textContent =
+    r.errors?.length > 0 ? `${r.errors.length} خطأ في الحروف المتشابهة` : '';
+
+  const words = target.split(' ');
+  let html = '';
+  words.forEach((w, i) => {
+    const isErr = r.errors?.some(e => e.position === i);
+    const isOk  = r.correct_words?.includes(w);
+    if (isErr)       html += `<span class="word-err">${w}<span class="badge badge-err">!</span></span> `;
+    else if (isOk)   html += `<span class="word-ok">${w}<span class="badge badge-ok">✓</span></span> `;
+    else             html += `<span class="word-neutral">${w}</span> `;
+  });
+  document.getElementById('highlighted-ayah').innerHTML = html;
+
+  const errList = document.getElementById('error-list');
+  errList.innerHTML = '';
+  if (r.errors?.length > 0) {
+    document.getElementById('success-msg').classList.add('hidden');
+    r.errors.forEach(err => {
+      const div = document.createElement('div');
+      div.className = 'error-item';
+      div.innerHTML = `
+        <div class="error-row">
+          <span class="tag-wrong">${err.spoken || '؟'}</span>
+          <span style="color:#555">←</span>
+          <span class="tag-right">${err.expected}</span>
+          ${err.confused_pair ? `<span class="confused-pair">${err.confused_pair[0]} ↔ ${err.confused_pair[1]}</span>` : ''}
+        </div>
+        <div class="tip">💡 ${err.tip || ''}</div>`;
+      errList.appendChild(div);
+    });
+  } else {
+    document.getElementById('success-msg').classList.remove('hidden');
+  }
+
+  document.getElementById('result-card').style.display = 'block';
+  document.getElementById('result-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function showError() {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('spinner-label').style.display = 'none';
+  alert('حدث خطأ. تأكد من إذن الميكروفون وحاول مرة أخرى.');
+  resetAll();
+}
+
+function resetAll() {
+  document.getElementById('result-card').style.display = 'none';
+  document.getElementById('rec-card').classList.remove('active');
+  document.getElementById('mic-btn').classList.remove('hidden');
+  document.getElementById('stop-btn').classList.add('hidden');
+  document.getElementById('waves').classList.add('hidden');
+  document.getElementById('rec-label').classList.add('hidden');
+  document.getElementById('start-label').classList.remove('hidden');
+  document.getElementById('rec-hint').classList.remove('hidden');
+  document.getElementById('live-transcript').style.display = 'none';
+  document.getElementById('live-transcript').textContent = '';
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('spinner-label').style.display = 'none';
+  finalTranscript = '';
+}
+
+function loadHistoryUI() {
+  if (!window.loadHistory) return;
+  window.loadHistory(items => {
+    const panel = document.getElementById('history-panel');
+    const empty = document.getElementById('empty-history');
+    panel.innerHTML = '';
+    if (items.length === 0) {
+      panel.innerHTML = '<div class="empty-history">لا يوجد سجل بعد. ابدأ التدريب! 📖</div>';
+      return;
+    }
+    items.forEach(item => {
+      const score = item.score || 0;
+      const color = score >= 85 ? '#27ae60' : score >= 60 ? '#f39c12' : '#e74c3c';
+      const date = new Date(item.timestamp).toLocaleDateString('ar-SA', {
+        month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
+      });
+      const errNames = (item.errors || []).map(e => e.expected).join('، ');
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      div.innerHTML = `
+        <div class="history-top">
+          <div class="history-ayah">${item.surah}</div>
+          <span class="history-score-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">
+            ${score}%
+          </span>
+        </div>
+        <div style="color:#c0a882;font-family:'Amiri',serif;font-size:15px;direction:rtl;margin-bottom:4px">
+          ${item.ayah}
+        </div>
+        <div class="history-meta">${date}</div>
+        ${errNames ? `<div class="history-errors">❌ أخطاء: ${errNames}</div>` : '<div style="color:#69f0ae;font-size:12px;margin-top:4px">✓ لا أخطاء</div>'}
+      `;
+      panel.appendChild(div);
+    });
+  });
+}
+</script>
+</body>
+</html>
