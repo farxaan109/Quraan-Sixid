@@ -364,6 +364,7 @@
   .d2pip.show { opacity: 1; }
 
   #float-dice-wrap.disabled { pointer-events: none; }
+  #float-dice-wrap.disabled #float-dice { pointer-events: none; cursor: default; }
   #float-dice-wrap.hidden-dice { display: none; }
 </style>
 </head>
@@ -463,14 +464,14 @@
 // ============================================================
 
 const COLORS = {
-  red:    { hex: '#e74c3c', light: '#ff6b6b', home: '#ff000033', name: 'Cas',    start: 1,  entryCell: 1  },
-  blue:   { hex: '#3498db', light: '#74b9ff', home: '#0000ff33', name: 'Buluug', start: 14, entryCell: 14 },
-  green:  { hex: '#2ecc71', light: '#55efc4', home: '#00ff0033', name: 'Cagaar', start: 27, entryCell: 27 },
-  yellow: { hex: '#f1c40f', light: '#fdcb6e', home: '#ffff0033', name: 'Huruud', start: 40, entryCell: 40 },
+  red:    { hex: '#c0392b', light: '#e74c3c', home: '#c0392b22', name: 'Cas',    start: 1,  entryCell: 1  },
+  blue:   { hex: '#1a6fad', light: '#2980b9', home: '#1a6fad22', name: 'Buluug', start: 14, entryCell: 14 },
+  green:  { hex: '#1e8449', light: '#27ae60', home: '#1e844922', name: 'Cagaar', start: 27, entryCell: 27 },
+  yellow: { hex: '#d4ac0d', light: '#f39c12', home: '#d4ac0d22', name: 'Huruud', start: 40, entryCell: 40 },
 };
 
-const SAFE_CELLS = [1, 9, 14, 22, 27, 35, 40, 48];
-const TOTAL_CELLS = 52;
+const SAFE_CELLS = [1, 9, 15, 23, 29, 37, 43, 51];
+const TOTAL_CELLS = 56;
 const HOME_STRETCH = 6;
 
 // ============================================================
@@ -482,7 +483,7 @@ const HOME_STRETCH = 6;
 
 // Safe outer cells (path indices) — xarig halkan ku jira laakiin
 // dadka kale uma joogi karaan anyway (capture laguma samayn karo)
-const SAFE_PATH_INDICES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+const SAFE_PATH_INDICES = new Set([0, 8, 14, 22, 28, 36, 42, 50]);
 
 // Returns a Set of outer path cell indices that are "xiran" (blocked)
 // by exactly 2+ pieces of the SAME color (excluding safe cells)
@@ -531,13 +532,13 @@ function isPathBlocked(movingColor, fromPos, steps) {
   if (blocked.size === 0) return false;
 
   const start = getStartCell(movingColor);
-  const fromDist = (fromPos - start + 52) % 52;
+  const fromDist = (fromPos - start + TOTAL_CELLS) % TOTAL_CELLS;
 
   for (let step = 1; step <= steps; step++) {
     const dist = fromDist + step;
-    // Once we go past 52, we're entering home stretch — no blocking there
-    if (dist >= 52) break;
-    const cellIdx = (start + dist) % 52;
+    // Once we go past TOTAL_CELLS, we're entering home stretch — no blocking there
+    if (dist >= TOTAL_CELLS) break;
+    const cellIdx = (start + dist) % TOTAL_CELLS;
     if (blocked.has(cellIdx)) {
       const blockerColor = getBlockerColor(cellIdx);
       if (blockerColor && blockerColor !== movingColor) {
@@ -593,17 +594,41 @@ function playSound(type) {
     }
 
     else if (type === 'capture') {
-      // Capture: dramatic descending
-      [400, 300, 200].forEach((freq, i) => {
-        const osc = ac.createOscillator();
-        const gain = ac.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, now + i * 0.07);
-        gain.gain.setValueAtTime(0.25, now + i * 0.07);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.1);
-        osc.connect(gain); gain.connect(ac.destination);
-        osc.start(now + i * 0.07); osc.stop(now + i * 0.07 + 0.12);
-      });
+      // Cod oohin 😢 — descending wail with vibrato
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      const vibrato = ac.createOscillator();
+      const vibratoGain = ac.createGain();
+
+      vibrato.frequency.setValueAtTime(5, now);
+      vibratoGain.gain.setValueAtTime(18, now);
+      vibrato.connect(vibratoGain);
+      vibratoGain.connect(osc.frequency);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.linearRampToValueAtTime(200, now + 0.7);
+
+      gain.gain.setValueAtTime(0.0, now);
+      gain.gain.linearRampToValueAtTime(0.45, now + 0.05);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.35);
+      gain.gain.linearRampToValueAtTime(0.0, now + 0.75);
+
+      osc.connect(gain); gain.connect(ac.destination);
+      vibrato.start(now); osc.start(now);
+      vibrato.stop(now + 0.8); osc.stop(now + 0.8);
+
+      // Second sob
+      const osc2 = ac.createOscillator();
+      const gain2 = ac.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(450, now + 0.5);
+      osc2.frequency.linearRampToValueAtTime(150, now + 1.1);
+      gain2.gain.setValueAtTime(0.0, now + 0.5);
+      gain2.gain.linearRampToValueAtTime(0.3, now + 0.55);
+      gain2.gain.linearRampToValueAtTime(0.0, now + 1.1);
+      osc2.connect(gain2); gain2.connect(ac.destination);
+      osc2.start(now + 0.5); osc2.stop(now + 1.15);
     }
 
     else if (type === 'xarig') {
@@ -620,16 +645,20 @@ function playSound(type) {
     }
 
     else if (type === 'exit') {
-      // Piece exits home: bright pop
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(700, now);
-      osc.frequency.exponentialRampToValueAtTime(900, now + 0.05);
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-      osc.connect(gain); gain.connect(ac.destination);
-      osc.start(now); osc.stop(now + 0.13);
+      // Cod qosol 😄 — bouncy ascending laughing tones
+      const laughFreqs = [350, 420, 500, 420, 500, 600, 500, 650];
+      laughFreqs.forEach((freq, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.07);
+        osc.frequency.linearRampToValueAtTime(freq * 1.08, now + i * 0.07 + 0.05);
+        gain.gain.setValueAtTime(0.0, now + i * 0.07);
+        gain.gain.linearRampToValueAtTime(0.28, now + i * 0.07 + 0.015);
+        gain.gain.linearRampToValueAtTime(0.0, now + i * 0.07 + 0.065);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.start(now + i * 0.07); osc.stop(now + i * 0.07 + 0.08);
+      });
     }
 
     else if (type === 'win') {
@@ -762,26 +791,22 @@ function canonicalPath(u) {
 }
 
 function standardLudoPath(u) {
-  // 52 canonical cells on a 15x15 grid
-  // Each color starts at its designated entry cell
-  const raw = [
-    // 0  Red starts here and goes...
-    [6,13],[6,12],[6,11],[6,10],[6,9],[6,8],   // 0-5
-    [5,8],[4,8],[3,8],[2,8],[1,8],[0,8],        // 6-11
-    [0,7],[0,6],                                // 12-13
-    [1,6],[2,6],[3,6],[4,6],[5,6],[6,6],        // 14-19
-    [6,5],[6,4],[6,3],[6,2],[6,1],[6,0],        // 20-25
-    [7,0],[8,0],                                // 26-27
-    [8,1],[8,2],[8,3],[8,4],[8,5],[8,6],        // 28-33
-    [9,6],[10,6],[11,6],[12,6],[13,6],[14,6],   // 34-39
-    [14,7],[14,8],                              // 40-41
-    [13,8],[12,8],[11,8],[10,8],[9,8],[8,8],    // 42-47
-    [8,9],[8,10],[8,11],[8,12],[8,13],[8,14],   // 48-53 → only 52 total
-    [7,14],                                     // 54 → index 53? we need exactly 52
+  // Generate the 56-cell outer path as 4 rotations of one 14-cell quadrant.
+  // This guarantees all 4 arms are geometrically identical (just rotated),
+  // so every color's exit/entry cells look exactly the same on the board.
+  const rotate = ([c, r]) => [14 - r, c]; // 90° rotation about the board center
+  const quadrant = [
+    [6,13],[6,12],[6,11],[6,10],[6,9],[6,8],
+    [5,8],[4,8],[3,8],[2,8],[1,8],[0,8],
+    [0,7],[0,6],
   ];
-  // Trim to 52
-  const path52 = raw.slice(0, 52);
-  return path52.map(([c, r]) => ({ x: (c + 0.5) * u, y: (r + 0.5) * u }));
+  const raw = [];
+  let cell = quadrant;
+  for (let q = 0; q < 4; q++) {
+    raw.push(...cell);
+    cell = cell.map(rotate);
+  }
+  return raw.map(([c, r]) => ({ x: (c + 0.5) * u, y: (r + 0.5) * u }));
 }
 
 // Home stretch paths (6 cells each, leading to center)
@@ -850,8 +875,8 @@ function drawGrid(u) {
     const r = Math.round(pt.y / u - 0.5);
     pathMap[`${c},${r}`] = i;
   });
-  const safeSet  = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
-  const entryMap = { 0: COLORS.blue.hex, 13: COLORS.red.hex, 26: COLORS.yellow.hex, 39: COLORS.green.hex };
+  const safeSet  = new Set([0, 8, 14, 22, 28, 36, 42, 50]);
+  const entryMap = { 0: COLORS.blue.hex, 14: COLORS.red.hex, 28: COLORS.yellow.hex, 42: COLORS.green.hex };
 
   for (let r = 0; r < 15; r++) {
     for (let c = 0; c < 15; c++) {
@@ -1217,7 +1242,7 @@ function getPieceCoord(player, piece) {
 
   // Outer path
   const path = standardLudoPath(u);
-  return path[piece.pos % 52];
+  return path[piece.pos % TOTAL_CELLS];
 }
 
 function getHomeSlots(color) {
@@ -1379,12 +1404,12 @@ function afterRoll() { window.afterRoll(); }
 //  PIECE MOVEMENT LOGIC
 // ============================================================
 function getStartCell(color) {
-  return { red: 13, blue: 0, green: 39, yellow: 26 }[color];
+  return { red: 14, blue: 0, green: 42, yellow: 28 }[color];
 }
 
 function getHomeStretchEntry(color) {
   // The path cell just before entering home stretch
-  return { red: 12, blue: 51, green: 38, yellow: 25 }[color];
+  return { red: 13, blue: 55, green: 41, yellow: 27 }[color];
 }
 
 function getMovablePieces(pl, dice) {
@@ -1430,38 +1455,43 @@ function calcNewPos(color, currentPos, dice) {
   }
 
   // On outer path
-  const homeEntry = getHomeStretchEntry(color);
   const start = getStartCell(color);
 
   // Calculate distance from start
-  const distFromStart = (currentPos - start + 52) % 52;
+  const distFromStart = (currentPos - start + TOTAL_CELLS) % TOTAL_CELLS;
   const newDist = distFromStart + dice;
 
-  if (newDist >= 52) {
+  if (newDist >= TOTAL_CELLS) {
     // Going into home stretch
-    const overflow = newDist - 52;
+    const overflow = newDist - TOTAL_CELLS;
     if (overflow > 5) return null; // overshoot
     if (overflow === 5) return 'WIN';
     return 100 + overflow;
   }
 
-  return (start + newDist) % 52;
+  return (start + newDist) % TOTAL_CELLS;
 }
 
 function movePiece(pl, pieceIdx) {
   const piece = pl.pieces[pieceIdx];
   movablePieces = [];
 
-  function finishTurn() {
+  function finishTurn(bonusReason) {
     render();
     updatePlayersPanel();
 
-    // Extra turn on 6
+    // Extra turn on 6, capture, or piece finish
     if (diceValue === 6) {
       diceRolled = false;
       diceValue = 0;
-      updatePlayersPanel(); // rebuild so dice shows in card
+      updatePlayersPanel();
       updateTurnMsg(`6 helay! Mar labaad rid! 🎲`);
+      checkAI();
+    } else if (bonusReason) {
+      diceRolled = false;
+      diceValue = 0;
+      updatePlayersPanel();
+      updateTurnMsg(`${bonusReason} Mar labaad rid! 🎲`);
       checkAI();
     } else {
       nextTurn();
@@ -1499,36 +1529,39 @@ function movePiece(pl, pieceIdx) {
         setTimeout(() => showWin(pl), 800);
         return;
       }
-      finishTurn();
+      finishTurn(`✅ Xoolo dhammeeyay!`);
     }, 450);
     return;
   }
 
   piece.pos = newPos;
   playSound('move');
-  checkCapture(pl, newPos);
-  finishTurn();
+  const didCapture = checkCapture(pl, newPos);
+  finishTurn(didCapture ? `💥 Xoolo dilay!` : null);
 }
 
 function checkCapture(attacker, pos) {
-  if (pos < 0 || pos >= 100) return;
-  const safeCells = new Set([0, 13, 26, 39, 8, 21, 34, 47]);
-  if (safeCells.has(pos)) return;
+  if (pos < 0 || pos >= 100) return false;
+  const safeCells = new Set([0, 14, 28, 42, 8, 22, 36, 50]);
+  if (safeCells.has(pos)) return false;
 
   // Cannot capture on a xarig (blocked) cell — it's a fortress
   const blocked = getBlockedCells();
-  if (blocked.has(pos)) return;
+  if (blocked.has(pos)) return false;
 
+  let captured = false;
   players.forEach(pl => {
     if (pl.color === attacker.color) return;
     pl.pieces.forEach(piece => {
       if (piece.pos === pos && !piece.finished) {
         piece.pos = -1;
+        captured = true;
         playSound('capture');
         showToast(`${attacker.name} ayaa ${pl.name} riday! 💥`);
       }
     });
   });
+  return captured;
 }
 
 function nextTurn() {
@@ -1724,9 +1757,12 @@ function setFloatDiceDisabled(dis) {
   else wrap.classList.remove('disabled');
 }
 
+let diceRollLocked = false; // hard lock against rapid/double-tap re-rolling
+
 function rollDiceFloat() {
   const pl = players[currentPlayer];
-  if (!pl || pl.type === 'ai' || diceRolled) return;
+  if (!pl || pl.type === 'ai' || diceRolled || diceRollLocked) return;
+  diceRollLocked = true;
 
   setFloatDiceDisabled(true);
   updateFloatDiceLabel('...');
@@ -1736,6 +1772,7 @@ function rollDiceFloat() {
   animateDice2d(final, () => {
     diceValue = final;
     diceRolled = true;
+    diceRollLocked = false;
     updateFloatDiceLabel('✓ ' + final);
     showDice(final);
     setTimeout(() => window.afterRoll(), 200);
@@ -1804,11 +1841,11 @@ function updateFloatDice() {
     wrap.classList.add('hidden-dice');
   } else {
     wrap.classList.remove('hidden-dice');
-    if (diceRolled) {
+    if (diceRolled || diceRollLocked) {
       wrap.classList.add('disabled');
       wrap.style.opacity = '1';
-      updateFloatDiceLabel('✓ ' + diceValue);
-      showDice2d(diceValue);
+      updateFloatDiceLabel(diceRolled ? '✓ ' + diceValue : '...');
+      if (diceRolled) showDice2d(diceValue);
     } else {
       wrap.classList.remove('disabled');
       wrap.style.opacity = '1';
