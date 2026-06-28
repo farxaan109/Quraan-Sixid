@@ -1,959 +1,1847 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="so">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Musxafka Dhagaysigu</title>
-<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ludo - Ciyaarta Sharafta</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --page-bg:#fdf6e3;
-  --page-border:#c8a96e;
-  --ink:#1a0a00;
-  --gold:#8b6914;
-  --gold2:#c9a84c;
-  --active-bg:#ffe066;
-  --active-border:#f5a500;
-  --correct-bg:#c8f0c8;
-  --correct-border:#4caf50;
-  --error-bg:#ffd0d0;
-  --error-border:#e53935;
-  --skip-bg:#ffe8b0;
-  --skip-border:#f5a500;
-  --ui-bg:#1a1a2e;
-  --ui-bg2:#16213e;
-  --ui-text:#e8e0d0;
-  --ui-border:#2a3a5a;
-  --btn-gold:#c9a84c;
-}
-body{
-  background:var(--ui-bg);
-  color:var(--ui-text);
-  font-family:'Noto Naskh Arabic',serif;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding:12px;
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* ===== TOP BAR ===== */
-.topbar{
-  width:100%;max-width:680px;
-  display:flex;align-items:center;gap:8px;
-  margin-bottom:10px;flex-wrap:wrap;
-  direction:ltr;
-}
-.topbar select{
-  flex:1;min-width:180px;
-  padding:7px 10px;
-  border:1px solid var(--ui-border);
-  border-radius:6px;
-  background:var(--ui-bg2);
-  color:var(--ui-text);
-  font-family:inherit;font-size:13px;
-}
-.topbar select:focus{outline:none;border-color:var(--btn-gold)}
-.btn{
-  padding:7px 13px;
-  border:1px solid var(--ui-border);
-  border-radius:6px;
-  background:var(--ui-bg2);
-  color:var(--ui-text);
-  font-family:inherit;font-size:13px;
-  cursor:pointer;white-space:nowrap;
-  transition:all 0.15s;
-}
-.btn:hover{border-color:var(--btn-gold);background:#1e2d40}
-.btn.primary{background:var(--btn-gold);color:#1a0a00;font-weight:700;border-color:var(--btn-gold)}
-.btn.primary:hover{background:#e0b84d}
-.btn.rec{background:#8b1a1a;color:#fdd;border-color:#c02020;animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+  body {
+    background: #1a8a8a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+    color: #fff;
+    overflow: hidden;
+  }
 
-/* ===== MUSHAF PAGE ===== */
-.mushaf-wrap{
-  width:100%;max-width:680px;
-  background:var(--page-bg);
-  border:3px solid var(--page-border);
-  border-radius:4px;
-  box-shadow:0 4px 24px #0008, inset 0 0 30px #f5e8c820;
-  position:relative;
-  margin-bottom:10px;
-  overflow:hidden;
-}
+  h1 { display: none; }
+  #info-bar { display: none; }
 
-/* Decorative corner borders */
-.mushaf-wrap::before,.mushaf-wrap::after{
-  content:'';position:absolute;
-  width:40px;height:40px;
-  border-color:var(--gold);
-  border-style:solid;
-  pointer-events:none;
-  z-index:2;
-}
-.mushaf-wrap::before{top:6px;right:6px;border-width:2px 2px 0 0}
-.mushaf-wrap::after{bottom:6px;left:6px;border-width:0 0 2px 2px}
+  /* ===== SETUP SCREEN ===== */
+  #setup-screen {
+    background: #1a1a2e;
+    border: 2px solid #ffd700;
+    border-radius: 16px;
+    padding: 30px 40px;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+  }
 
-.mushaf-header{
-  text-align:center;
-  padding:8px 20px 4px;
-  border-bottom:1px solid var(--page-border);
-}
-.surah-name-box{
-  display:inline-block;
-  border:1px solid var(--gold);
-  border-radius:4px;
-  padding:3px 24px;
-  font-family:'Amiri Quran',serif;
-  font-size:18px;
-  color:var(--gold);
-  font-weight:700;
-  letter-spacing:1px;
-  background:#fff9ee;
-}
-.surah-meta{font-size:11px;color:var(--gold);margin-top:2px;opacity:.8}
+  #setup-screen h2 { color: #ffd700; margin-bottom: 20px; font-size: 1.4rem; }
 
-/* The 15-line text area */
-.mushaf-body{
-  padding:10px 24px 10px 14px;
-  direction:rtl;
-}
-.quran-text{
-  font-family:'Amiri Quran',serif;
-  font-size:28px;
-  line-height:2.15;
-  color:var(--ink);
-  text-align:justify;
-  text-align-last:right;
-  word-spacing:6px;
-  direction:rtl;
-}
-/* Each word is a span */
-.w{
-  display:inline;
-  padding:2px 2px;
-  border-radius:4px;
-  cursor:default;
-  transition:background .12s, color .12s;
-  border:1px solid transparent;
-}
-.w.active{
-  background:var(--active-bg);
-  border-color:var(--active-border);
-  color:#7a4000;
-  border-radius:6px;
-}
-.w.flash-error{
-  background:#ff4444 !important;
-  border-color:#cc0000 !important;
-  color:#fff !important;
-  animation:flashRed 0.5s ease-out;
-}
-@keyframes flashRed{
-  0%{background:#ff1111;transform:scale(1.15);}
-  60%{background:#ff4444;transform:scale(1.05);}
-  100%{background:var(--error-bg);transform:scale(1);}
-}
-.w.correct{
-  background:var(--correct-bg);
-  border-color:var(--correct-border);
-  color:#1a5c1a;
-}
-.w.error{
-  background:var(--error-bg);
-  border-color:var(--error-border);
-  color:#8b0000;
-  text-decoration:underline;
-  text-decoration-color:#e53935;
-}
-.w.skipped{
-  background:var(--skip-bg);
-  border-color:var(--skip-border);
-  color:#7a4400;
-}
-.w.tajweed-error{
-  background:#ffe0f0;
-  border-color:#c0006a;
-  color:#7a003a;
-  text-decoration:underline;
-  text-decoration-color:#c0006a;
-  text-decoration-style:wavy;
-}
-/* Ayah number circles */
-.ayah-num{
-  display:inline-block;
-  font-family:'Amiri Quran',serif;
-  font-size:18px;
-  color:var(--gold);
-  margin:0 3px;
-  vertical-align:middle;
-}
-/* Basmala line */
-.basmala-line{
-  text-align:center;
-  display:block;
-  color:var(--gold);
-  font-size:30px;
-  padding:4px 0 2px;
-  border-bottom:1px solid #e8d8a040;
-  margin-bottom:4px;
-}
-.mushaf-footer{
-  text-align:center;
-  padding:4px 20px 8px;
-  border-top:1px solid var(--page-border);
-  font-family:'Amiri Quran',serif;
-  font-size:13px;
-  color:var(--gold);
-  opacity:.7;
-}
-.page-num{
-  font-size:12px;color:var(--gold);
-  padding:2px 10px;
-  border:1px solid var(--gold);
-  border-radius:10px;
-  display:inline-block;
-  opacity:.6;
-}
+  .player-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    background: #0d0d1a;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
 
-/* ===== CONTROLS BAR ===== */
-.controls{
-  width:100%;max-width:680px;
-  display:flex;gap:6px;flex-wrap:wrap;
-  margin-bottom:8px;
-  direction:ltr;
-}
+  .player-option:hover { border-color: #ffd700; }
+  .player-option input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
+  .player-option label { cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 10px; }
 
-/* ===== STATUS ===== */
-.status-bar{
-  width:100%;max-width:680px;
-  padding:7px 12px;
-  border-radius:6px;
-  background:var(--ui-bg2);
-  border:1px solid var(--ui-border);
-  font-size:12px;color:var(--ui-text);
-  display:flex;align-items:center;gap:8px;
-  margin-bottom:8px;
-  direction:ltr;
-}
-.dot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0}
-.dot.on{background:#e24b4a;animation:pulse 1s infinite}
-.dot.ok{background:#4caf50}
+  .dot-preview {
+    width: 24px; height: 24px; border-radius: 50%; display: inline-block;
+    border: 2px solid rgba(255,255,255,0.4);
+  }
 
-/* ===== HEARD BOX ===== */
-.heard-bar{
-  width:100%;max-width:680px;
-  direction:rtl;
-  margin-bottom:8px;
-}
-.heard-bar label{font-size:11px;color:#888;margin-bottom:3px;display:block;direction:ltr}
-.heard-content{
-  min-height:44px;padding:8px 12px;
-  border:1px solid var(--ui-border);
-  border-radius:6px;
-  background:var(--ui-bg2);
-  font-family:'Amiri Quran',serif;
-  font-size:22px;direction:rtl;
-  color:var(--ui-text);line-height:1.7;
-}
+  .type-select { background: #1a1a2e; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 4px 8px; }
 
-/* ===== SCORES ===== */
-.scores{
-  width:100%;max-width:680px;
-  display:flex;gap:6px;margin-bottom:8px;direction:ltr;
-}
-.sc{flex:1;padding:9px 6px;border-radius:6px;background:var(--ui-bg2);border:1px solid var(--ui-border);text-align:center}
-.sc .n{font-size:20px;font-weight:700}
-.sc .l{font-size:10px;color:#888;margin-top:2px}
-.sc.g .n{color:#7bc87b}.sc.r .n{color:#e07070}.sc.w .n{color:#e0b040}.sc.p .n{color:#c9a84c}
-.sc.tj .n{color:#c0006a}
+  #start-btn {
+    margin-top: 20px;
+    padding: 12px 40px;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
 
-/* ===== FEEDBACK ===== */
-.fb{width:100%;max-width:680px;border:1px solid var(--ui-border);border-radius:8px;overflow:hidden;margin-bottom:8px}
-.fb-head{padding:8px 14px;background:#1e2d40;font-size:12px;font-weight:700;color:var(--btn-gold);border-bottom:1px solid var(--ui-border);direction:ltr}
-.fb-body{padding:12px 14px;font-family:'Amiri Quran',serif;font-size:17px;direction:rtl;text-align:right;line-height:1.9;color:var(--ui-text);white-space:pre-wrap}
+  #start-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px #ffd70066; }
 
-/* Loading */
-.loading-msg{text-align:center;padding:60px 20px;font-size:14px;color:#888}
-.spin{display:inline-block;width:20px;height:20px;border:2px solid #333;border-top-color:var(--btn-gold);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-left:8px}
-@keyframes spin{to{transform:rotate(360deg)}}
+  /* ===== GAME AREA — fullscreen board ===== */
+  #game-area {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+  }
 
-@media(max-width:500px){
-  .quran-text{font-size:23px;line-height:2.0}
-  .mushaf-body{padding:8px 12px 8px 8px}
-}
+  #players-panel { display: none; }
+
+  /* BOARD fills screen */
+  #board-wrap {
+    position: relative;
+    width: min(100vw, 100vh);
+    height: min(100vw, 100vh);
+  }
+
+  canvas#ludo-board {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: 5px solid #c8860a;
+    border-radius: 8px;
+    box-shadow: 0 0 0 3px #e8a020, 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  /* Corner player labels */
+  .corner-label {
+    position: absolute;
+    font-size: clamp(0.55rem, 2.2vw, 0.85rem);
+    font-weight: bold;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 5;
+    line-height: 1.3;
+    text-align: center;
+  }
+  .corner-label.active-corner {
+    background: rgba(0,0,0,0.82);
+    box-shadow: 0 0 10px currentColor;
+  }
+
+  #corner-tl { top: 4px; left: 4px; }
+  #corner-tr { top: 4px; right: 4px; }
+  #corner-bl { bottom: 4px; left: 4px; }
+  #corner-br { bottom: 4px; right: 4px; }
+
+  /* Turn bar at bottom of board */
+  #turn-bar {
+    position: absolute;
+    bottom: -36px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #ffffffcc;
+    pointer-events: none;
+  }
+
+  .player-card {
+    background: #1a1a2e;
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 8px 12px;
+    min-width: 120px;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .player-card.active {
+    border-color: var(--pc);
+    box-shadow: 0 0 18px var(--pc);
+    background: #1e1e36;
+  }
+
+  .player-card .pc-name { font-weight: bold; color: var(--pc); font-size: 0.88rem; }
+  .player-card .pc-pieces { font-size: 0.75rem; color: #aaa; }
+
+  /* Inline dice inside active card */
+  .pc-dice-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .pc-dice-face {
+    width: 44px; height: 44px;
+    background: #fff;
+    border-radius: 8px;
+    display: grid;
+    grid-template-areas:
+      "a . b"
+      "c d e"
+      "f . g";
+    gap: 3px;
+    padding: 5px;
+    box-shadow: 0 2px 8px #00000066;
+    flex-shrink: 0;
+  }
+
+  .pc-dice-face.rolling { animation: rollAnim 0.5s ease; }
+
+  .pc-pip {
+    width: 7px; height: 7px;
+    background: #111;
+    border-radius: 50%;
+    place-self: center;
+  }
+  .pc-pip.hidden { opacity: 0; }
+
+  .pc-roll-btn {
+    flex: 1;
+    padding: 7px 10px;
+    background: linear-gradient(135deg, var(--pc), var(--pc-dark, #cc8800));
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .pc-roll-btn:hover:not(:disabled) { transform: scale(1.04); }
+  .pc-roll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .pc-turn-msg {
+    font-size: 0.72rem;
+    color: #aaa;
+    min-height: 16px;
+  }
+
+  @keyframes rollAnim {
+    0%   { transform: rotate(0deg) scale(1); }
+    25%  { transform: rotate(90deg) scale(0.8); }
+    50%  { transform: rotate(180deg) scale(1.1); }
+    75%  { transform: rotate(270deg) scale(0.9); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+
+  /* BOARD */
+  #board-wrap { position: relative; }
+
+  canvas#ludo-board {
+    border-radius: 8px;
+    box-shadow: 0 0 40px #00000088;
+    max-width: 95vw;
+    max-height: 95vw;
+  }
+
+  /* WIN OVERLAY */
+  #win-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000000cc;
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #win-overlay.show { display: flex; }
+
+  #win-box {
+    background: #1a1a2e;
+    border: 3px solid #ffd700;
+    border-radius: 20px;
+    padding: 40px 50px;
+    text-align: center;
+    animation: popIn 0.4s ease;
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #win-box h2 { font-size: 2rem; color: #ffd700; margin-bottom: 10px; }
+  #win-box p { font-size: 1.1rem; color: #ccc; margin-bottom: 24px; }
+
+  #play-again-btn {
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: #ffd700;
+    color: #000;
+    padding: 10px 24px;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    transition: transform 0.3s ease;
+    z-index: 200;
+    pointer-events: none;
+  }
+
+  /* ===== FLOATING 2D DICE ON BOARD ===== */
+  #float-dice-wrap {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    gap: 4px;
+    transition: top 0.35s cubic-bezier(.4,0,.2,1), left 0.35s cubic-bezier(.4,0,.2,1);
+  }
+
+  #float-dice {
+    cursor: pointer;
+    pointer-events: all;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  #float-dice-label {
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: bold;
+    background: rgba(0,0,0,0.6);
+    padding: 2px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 3px #000;
+    white-space: nowrap;
+  }
+
+  /* 2D Dice face */
+  #dice-2d {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(145deg, #ffffff, #e8e8e8);
+    border: 2px solid #ccc;
+    border-radius: 7px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.5), inset 0 1px 0 #fff;
+    display: grid;
+    grid-template-areas:
+      "a . b"
+      "c d e"
+      "f . g";
+    padding: 5px;
+    gap: 2px;
+    box-sizing: border-box;
+  }
+
+  #dice-2d.bounce {
+    animation: diceBounce2d 0.6s cubic-bezier(.36,.07,.19,.97) forwards;
+  }
+
+  @keyframes diceBounce2d {
+    0%   { transform: scale(1) rotate(0deg) translateY(0); }
+    20%  { transform: scale(1.2) rotate(-12deg) translateY(-14px); }
+    40%  { transform: scale(1.25) rotate(16deg) translateY(-22px); }
+    60%  { transform: scale(1.1) rotate(-6deg) translateY(-8px); }
+    80%  { transform: scale(1.04) rotate(3deg) translateY(-2px); }
+    100% { transform: scale(1) rotate(0deg) translateY(0); }
+  }
+
+  .d2pip {
+    width: 6px; height: 6px;
+    background: radial-gradient(circle at 35% 30%, #555, #111);
+    border-radius: 50%;
+    place-self: center;
+    opacity: 0;
+  }
+  .d2pip.show { opacity: 1; }
+
+  #float-dice-wrap.disabled { pointer-events: none; }
+  #float-dice-wrap.hidden-dice { display: none; }
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <select id="surahSel" onchange="onSurahChange()">
-    <option value="">— Dooro Suurad —</option>
-  </select>
-  <button class="btn" onclick="prevSurah()">◀</button>
-  <button class="btn" onclick="nextSurah()">▶</button>
+<h1>🎲 LUDO</h1>
+<div id="info-bar">Ciyaarta Sharafta | <span>Ku Raaxeyso!</span></div>
+
+<!-- SETUP -->
+<div id="setup-screen">
+  <h2>⚙️ Dejinta Ciyaarta</h2>
+  <p style="color:#aaa; margin-bottom:16px; font-size:0.85rem;">Dooro ciyaartoyda (ugu yaraan 2)</p>
+
+  <div class="player-option" id="opt-red">
+    <label><input type="checkbox" id="chk-red" checked>
+      <span class="dot-preview" style="background:#e74c3c"></span> Cas
+    </label>
+    <select class="type-select" id="type-red">
+      <option value="human">Aadane</option>
+      <option value="ai">AI</option>
+    </select>
+  </div>
+
+  <div class="player-option" id="opt-blue">
+    <label><input type="checkbox" id="chk-blue" checked>
+      <span class="dot-preview" style="background:#3498db"></span> Buluug
+    </label>
+    <select class="type-select" id="type-blue">
+      <option value="human">Aadane</option>
+      <option value="ai">AI</option>
+    </select>
+  </div>
+
+  <div class="player-option" id="opt-green">
+    <label><input type="checkbox" id="chk-green">
+      <span class="dot-preview" style="background:#2ecc71"></span> Cagaar
+    </label>
+    <select class="type-select" id="type-green">
+      <option value="human">Aadane</option>
+      <option value="ai" selected>AI</option>
+    </select>
+  </div>
+
+  <div class="player-option" id="opt-yellow">
+    <label><input type="checkbox" id="chk-yellow">
+      <span class="dot-preview" style="background:#f1c40f"></span> Huruud
+    </label>
+    <select class="type-select" id="type-yellow">
+      <option value="human">Aadane</option>
+      <option value="ai" selected>AI</option>
+    </select>
+  </div>
+
+  <button id="start-btn" onclick="startGame()">▶ Bilow Ciyaarta</button>
 </div>
 
-<!-- MUSHAF PAGE -->
-<div class="mushaf-wrap" id="mushafWrap">
-  <div class="mushaf-header">
-    <div class="surah-name-box" id="surahNameBox">بِسْمِ ٱللَّهِ</div>
-    <div class="surah-meta" id="surahMeta"></div>
-  </div>
-  <div class="mushaf-body">
-    <div class="quran-text" id="quranText">
-      <div class="loading-msg">Dooro suurad<span class="spin"></span></div>
+<!-- GAME -->
+<div id="game-area">
+  <!-- Board with player name overlays in corners -->
+  <div id="board-wrap">
+    <canvas id="ludo-board"></canvas>
+
+    <!-- Floating 2D dice overlay on board -->
+    <div id="float-dice-wrap">
+      <div id="float-dice" onclick="rollDiceFloat()">
+        <div id="dice-2d">
+          <div class="d2pip" id="dp1" style="grid-area:a"></div>
+          <div class="d2pip" id="dp2" style="grid-area:b"></div>
+          <div class="d2pip" id="dp3" style="grid-area:c"></div>
+          <div class="d2pip" id="dp4" style="grid-area:d"></div>
+          <div class="d2pip" id="dp5" style="grid-area:e"></div>
+          <div class="d2pip" id="dp6" style="grid-area:f"></div>
+          <div class="d2pip" id="dp7" style="grid-area:g"></div>
+        </div>
+        <div id="float-dice-label">Taabo!</div>
+      </div>
     </div>
+
+    <!-- Turn indicator bar at bottom of board -->
+    <div id="turn-bar"></div>
   </div>
-  <div class="mushaf-footer">
-    <span class="page-num" id="pageNum">✦</span>
+</div>
+
+<div id="win-overlay">
+  <div id="win-box">
+    <h2>🏆 Guul!</h2>
+    <p id="win-msg">Ciyaartaha ayaa guuleystay!</p>
+    <button class="play-again-btn" id="play-again-btn" onclick="location.reload()">🔄 Mar Labaad</button>
   </div>
 </div>
 
-<!-- CONTROLS -->
-<div class="controls">
-  <button class="btn primary" id="recBtn" onclick="toggleRec()">🎙 <span id="recLbl">Bilow Akhris</span></button>
-  <button class="btn" id="checkBtn" onclick="doCheck()" disabled>✅ Hubi</button>
-  <button class="btn" onclick="resetAll()">🔄 Dib u Bilow</button>
-</div>
-
-<!-- STATUS -->
-<div class="status-bar"><div class="dot" id="sdot"></div><span id="statusTxt">Dooro suurad si loo bilaabo.</span></div>
-
-<!-- CURRENT WORD DISPLAY -->
-<div class="heard-bar">
-  <label>Erayga hadda: <span id="wordProgress" style="color:var(--btn-gold);font-size:11px"></span></label>
-  <div class="heard-content" id="heardBox" style="text-align:center;font-size:32px;letter-spacing:2px;min-height:54px;display:flex;align-items:center;justify-content:center;">—</div>
-</div>
-
-<!-- SCORES -->
-<div class="scores" id="scoreRow" style="display:none">
-  <div class="sc g"><div class="n" id="sCorrect">0</div><div class="l">Sax</div></div>
-  <div class="sc r"><div class="n" id="sErrors">0</div><div class="l">Khalad</div></div>
-  <div class="sc tj score-val" id="tajCard" style="display:none"><div class="n score-val">0</div><div class="l">Xarakad</div></div>
-  <div class="sc w"><div class="n" id="sSkip">0</div><div class="l">Booday</div></div>
-  <div class="sc p"><div class="n" id="sPct">0%</div><div class="l">Dhibco</div></div>
-</div>
-
-<!-- FEEDBACK -->
-<div class="fb" id="fbBox" style="display:none">
-  <div class="fb-head">📊 Falanqaynta Akhrisga</div>
-  <div class="fb-body" id="fbBody"></div>
-</div>
+<div id="toast" id="toast"></div>
 
 <script>
-// ========================================
-// DATA
-// ========================================
-let QURAN = null;
-let curSurah = 0;
-let isRec = false;
-let recog = null;
-let fullText = "";
+// ============================================================
+//  LUDO GAME ENGINE
+// ============================================================
 
-// word tracking: flat array of all words across all ayahs
-// each: { ayah, wordIdx, text, el (DOM span), state }
-let WORDS = [];       // built per surah
-let wordPtr = 0;      // current word being tracked (global index into WORDS)
+const COLORS = {
+  red:    { hex: '#e74c3c', light: '#ff6b6b', home: '#ff000033', name: 'Cas',    start: 1,  entryCell: 1  },
+  blue:   { hex: '#3498db', light: '#74b9ff', home: '#0000ff33', name: 'Buluug', start: 14, entryCell: 14 },
+  green:  { hex: '#2ecc71', light: '#55efc4', home: '#00ff0033', name: 'Cagaar', start: 27, entryCell: 27 },
+  yellow: { hex: '#f1c40f', light: '#fdcb6e', home: '#ffff0033', name: 'Huruud', start: 40, entryCell: 40 },
+};
 
-const SURAH_NAMES = [
-  "","Al-Fatiha","Al-Baqara","Aal-i-Imran","An-Nisa","Al-Ma'ida",
-  "Al-An'am","Al-A'raf","Al-Anfal","At-Tawba","Yunus",
-  "Hud","Yusuf","Ar-Ra'd","Ibrahim","Al-Hijr",
-  "An-Nahl","Al-Isra","Al-Kahf","Maryam","Ta-Ha",
-  "Al-Anbiya","Al-Hajj","Al-Mu'minun","An-Nur","Al-Furqan",
-  "Ash-Shu'ara","An-Naml","Al-Qasas","Al-Ankabut","Ar-Rum",
-  "Luqman","As-Sajda","Al-Ahzab","Saba","Fatir",
-  "Ya-Sin","As-Saffat","Sad","Az-Zumar","Ghafir",
-  "Fussilat","Ash-Shura","Az-Zukhruf","Ad-Dukhan","Al-Jathiya",
-  "Al-Ahqaf","Muhammad","Al-Fath","Al-Hujurat","Qaf",
-  "Adh-Dhariyat","At-Tur","An-Najm","Al-Qamar","Ar-Rahman",
-  "Al-Waqi'a","Al-Hadid","Al-Mujadila","Al-Hashr","Al-Mumtahana",
-  "As-Saf","Al-Jumu'a","Al-Munafiqun","At-Taghabun","At-Talaq",
-  "At-Tahrim","Al-Mulk","Al-Qalam","Al-Haqqah","Al-Ma'arij",
-  "Nuh","Al-Jinn","Al-Muzzammil","Al-Muddaththir","Al-Qiyama",
-  "Al-Insan","Al-Mursalat","An-Naba","An-Nazi'at","Abasa",
-  "At-Takwir","Al-Infitar","Al-Mutaffifin","Al-Inshiqaq","Al-Buruj",
-  "At-Tariq","Al-A'la","Al-Ghashiya","Al-Fajr","Al-Balad",
-  "Ash-Shams","Al-Layl","Ad-Duha","Ash-Sharh","At-Tin",
-  "Al-Alaq","Al-Qadr","Al-Bayyina","Az-Zalzala","Al-Adiyat",
-  "Al-Qari'a","At-Takathur","Al-Asr","Al-Humaza","Al-Fil",
-  "Quraysh","Al-Ma'un","Al-Kawthar","Al-Kafirun","An-Nasr",
-  "Al-Masad","Al-Ikhlas","Al-Falaq","An-Nas"
-];
+const SAFE_CELLS = [1, 9, 14, 22, 27, 35, 40, 48];
+const TOTAL_CELLS = 52;
+const HOME_STRETCH = 6;
 
-// Arabic number circle chars for ayah endings
-function ayahCircle(n) {
-  const ar = n.toString().replace(/[0-9]/g,'d=>"٠١٢٣٤٥٦٧٨٩"[d]'.split(',')[0]);
-  // Use arabic-indic numbers inside ﴿ ﴾
-  const numStr = n.toString().split('').map(d=>'٠١٢٣٤٥٦٧٨٩'[d]).join('');
-  return `<span class="ayah-num">﴿${numStr}﴾</span>`;
-}
+// ============================================================
+//  BLOCKING SYSTEM
+//  Xarig: 2+ xoolo isku midab ah hal cell → blocked
+//  Bandar (safe cells) waxay xirmin karaan laakiin dadka kale
+//  KUMA joogsan karaan — waa sharci
+// ============================================================
 
-// ========================================
-// LOAD
-// ========================================
-async function init() {
-  setStatus('Quraanka la soo degayaa...','');
-  try {
-    const r = await fetch('https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran.json');
-    const raw = await r.json();
-    QURAN = {};
-    raw.forEach(s => {
-      QURAN[s.id] = {
-        name: SURAH_NAMES[s.id] || s.transliteration,
-        ayahs: s.verses.map(v => v.text)
-      };
+// Safe outer cells (path indices) — xarig halkan ku jira laakiin
+// dadka kale uma joogi karaan anyway (capture laguma samayn karo)
+const SAFE_PATH_INDICES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+
+// Returns a Set of outer path cell indices that are "xiran" (blocked)
+// by exactly 2+ pieces of the SAME color (excluding safe cells)
+function getBlockedCells() {
+  const cellCount = {}; // cellIdx -> { color, count }
+  players.forEach(pl => {
+    pl.pieces.forEach(piece => {
+      if (piece.finished || piece.pos < 0 || piece.pos >= 100) return;
+      const idx = piece.pos;
+      if (!cellCount[idx]) cellCount[idx] = { color: pl.color, count: 0 };
+      // Only count same color (mixed colors can't form xarig)
+      if (cellCount[idx].color === pl.color) {
+        cellCount[idx].count++;
+      } else {
+        // Different colors on same cell — this is a capture situation, not xarig
+        cellCount[idx].count = 0;
+      }
     });
-    buildSelect();
-    setStatus('✅ 114 suuradood diyaar. Dooro suurad.','ok');
-  } catch(e) {
-    // fallback minimal
-    QURAN = {
-      1:{name:"Al-Fatiha",ayahs:["بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ","ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ","ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ","مَـٰلِكِ يَوْمِ ٱلدِّينِ","إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ","ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ","صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ"]},
-      112:{name:"Al-Ikhlas",ayahs:["بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ","قُلْ هُوَ ٱللَّهُ أَحَدٌ","ٱللَّهُ ٱلصَّمَدُ","لَمْ يَلِدْ وَلَمْ يُولَدْ","وَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌۢ"]},
-      114:{name:"An-Nas",ayahs:["بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ","قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ","مَلِكِ ٱلنَّاسِ","إِلَـٰهِ ٱلنَّاسِ","مِن شَرِّ ٱلْوَسْوَاسِ ٱلْخَنَّاسِ","ٱلَّذِى يُوَسْوِسُ فِى صُدُورِ ٱلنَّاسِ","مِنَ ٱلْجِنَّةِ وَٱلنَّاسِ"]}
-    };
-    buildSelect();
-    setStatus('⚠️ Internet xidid — suurado kooban kaliya','');
-  }
-}
-
-function buildSelect() {
-  const sel = document.getElementById('surahSel');
-  sel.innerHTML = '<option value="">— Dooro Suurad —</option>';
-  Object.keys(QURAN).forEach(i => {
-    const o = document.createElement('option');
-    o.value = i;
-    o.textContent = `${i}. ${QURAN[i].name} (${QURAN[i].ayahs.length})`;
-    sel.appendChild(o);
   });
-}
 
-// ========================================
-// RENDER MUSHAF
-// ========================================
-function renderMushaf() {
-  if (!QURAN || !QURAN[curSurah]) return;
-  const s = QURAN[curSurah];
-
-  document.getElementById('surahNameBox').textContent = s.name;
-  document.getElementById('surahMeta').textContent = `${s.ayahs.length} aayah`;
-  document.getElementById('pageNum').textContent = `✦ ${curSurah} ✦`;
-
-  const qt = document.getElementById('quranText');
-  qt.innerHTML = '';
-  WORDS = [];
-
-  s.ayahs.forEach((ayah, ai) => {
-    const isBasmala = (ai === 0 && ayah.includes('بِسْمِ ٱللَّهِ'));
-
-    if (isBasmala) {
-      // Basmala: single centered styled line
-      const bl = document.createElement('div');
-      bl.className = 'basmala-line';
-      bl.textContent = ayah;
-      qt.appendChild(bl);
-      // Still add words to tracking
-      ayah.split(' ').forEach((w, wi) => {
-        WORDS.push({ ayah: ai, wordIdx: wi, text: w, el: null, state: 'pending' });
-      });
-      // Ayah number
-      qt.appendChild(document.createTextNode(' '));
-      return;
+  const blocked = new Set();
+  Object.entries(cellCount).forEach(([idx, { count }]) => {
+    const i = parseInt(idx);
+    if (count >= 2 && !SAFE_PATH_INDICES.has(i)) {
+      blocked.add(i);
     }
-
-    // Normal ayah: word spans inline
-    const words = ayah.split(' ');
-    words.forEach((w, wi) => {
-      const span = document.createElement('span');
-      span.className = 'w';
-      span.textContent = w + ' ';
-      qt.appendChild(span);
-      WORDS.push({ ayah: ai, wordIdx: wi, text: w, el: span, state: 'pending' });
-    });
-
-    // Ayah number circle
-    const numSpan = document.createElement('span');
-    numSpan.className = 'ayah-num';
-    const numStr = (ai + 1).toString().split('').map(d => '٠١٢٣٤٥٦٧٨٩'[d]).join('');
-    numSpan.textContent = `﴿${numStr}﴾`;
-    qt.appendChild(numSpan);
-    qt.appendChild(document.createTextNode(' '));
   });
-
-  // Mark first word active
-  wordPtr = 0;
-  setActive(0);
+  return blocked;
 }
 
-function setActive(idx) {
-  // Remove previous active
-  WORDS.forEach((w, i) => {
-    if (w.el) {
-      if (i === idx) {
-        w.el.classList.add('active');
-        w.el.classList.remove('correct','error','skipped');
-        // Scroll into view
-        w.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else if (w.state === 'pending') {
-        w.el.classList.remove('active','correct','error','skipped');
+// Returns the color of the blocking player at a cell (for visual)
+function getBlockerColor(cellIdx) {
+  for (const pl of players) {
+    const count = pl.pieces.filter(p => !p.finished && p.pos === cellIdx).length;
+    if (count >= 2) return pl.color;
+  }
+  return null;
+}
+
+// Check if a path from currentPos moving `steps` steps is blocked for movingColor.
+// Walks each intermediate cell AND the landing cell — any blocked cell by another color = BLOCKED.
+// This prevents both landing on and passing through a xarig.
+function isPathBlocked(movingColor, fromPos, steps) {
+  if (fromPos < 0 || fromPos >= 100) return false;
+  const blocked = getBlockedCells();
+  if (blocked.size === 0) return false;
+
+  const start = getStartCell(movingColor);
+  const fromDist = (fromPos - start + 52) % 52;
+
+  for (let step = 1; step <= steps; step++) {
+    const dist = fromDist + step;
+    // Once we go past 52, we're entering home stretch — no blocking there
+    if (dist >= 52) break;
+    const cellIdx = (start + dist) % 52;
+    if (blocked.has(cellIdx)) {
+      const blockerColor = getBlockerColor(cellIdx);
+      if (blockerColor && blockerColor !== movingColor) {
+        return true; // Cannot pass or land on this cell
       }
     }
+  }
+  return false;
+}
+
+// ============================================================
+//  SOUND SYSTEM (Web Audio API — no external files needed)
+// ============================================================
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playSound(type) {
+  try {
+    const ac = getAudioCtx();
+    const now = ac.currentTime;
+
+    if (type === 'dice') {
+      // Dice roll: short noise bursts
+      for (let i = 0; i < 4; i++) {
+        const buf = ac.createBuffer(1, ac.sampleRate * 0.06, ac.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let j = 0; j < data.length; j++) data[j] = (Math.random() * 2 - 1) * 0.3;
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+        const gain = ac.createGain();
+        gain.gain.setValueAtTime(0.4, now + i * 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.05);
+        src.connect(gain); gain.connect(ac.destination);
+        src.start(now + i * 0.07);
+      }
+    }
+
+    else if (type === 'move') {
+      // Piece move: soft click
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.start(now); osc.stop(now + 0.1);
+    }
+
+    else if (type === 'capture') {
+      // Capture: dramatic descending
+      [400, 300, 200].forEach((freq, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now + i * 0.07);
+        gain.gain.setValueAtTime(0.25, now + i * 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.1);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.start(now + i * 0.07); osc.stop(now + i * 0.07 + 0.12);
+      });
+    }
+
+    else if (type === 'xarig') {
+      // Xarig blocked: low thud
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(80, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.start(now); osc.stop(now + 0.2);
+    }
+
+    else if (type === 'exit') {
+      // Piece exits home: bright pop
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(700, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.05);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.start(now); osc.stop(now + 0.13);
+    }
+
+    else if (type === 'win') {
+      // Win fanfare: ascending arpeggio
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((freq, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + i * 0.12);
+        gain.gain.setValueAtTime(0.35, now + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.25);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.start(now + i * 0.12); osc.stop(now + i * 0.12 + 0.3);
+      });
+    }
+
+    else if (type === 'piece_done') {
+      // Piece reaches home: sweet chord
+      [523, 659, 784].forEach((freq, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.start(now); osc.stop(now + 0.45);
+      });
+    }
+  } catch(e) { /* sound failed silently */ }
+}
+
+// Board cell path: 52 outer cells, each color has 6 home stretch cells
+// Positions: -1 = at home base, 0-51 = outer path, 100-105 = home column
+
+let players = [];
+let currentPlayer = 0;
+let diceValue = 0;
+let diceRolled = false;
+let gameStarted = false;
+let movablePieces = [];
+
+const canvas = document.getElementById('ludo-board');
+const ctx = canvas.getContext('2d');
+let BS; // board size
+
+// ---- Cell coordinates on outer path ----
+function getOuterCellCoord(cell) {
+  // cell 0..51 mapped clockwise starting from bottom-left of center
+  // Each side has 13 cells (3 rows x... simpler: use index mapping)
+  const path = buildPathCoords();
+  return path[cell % TOTAL_CELLS];
+}
+
+function buildPathCoords() {
+  const u = BS / 15; // unit
+  const coords = [];
+
+  // Bottom-left quadrant: Red start area
+  // Path goes: bottom row left-to-right → right col bottom-to-top → top row right-to-left → left col top-to-bottom
+  // Simplified: standard Ludo path 52 cells
+
+  // Row positions (col, row) in 15x15 grid units
+  const path15 = [
+    // Red side bottom (cells 0-5): col 6, rows 14→9
+    [6,14],[6,13],[6,12],[6,11],[6,10],[6,9],
+    // Corner + top of red (cells 6-8)
+    [6,8],[7,8],[8,8],
+    // Blue side left (cells 9-14): row 8, cols 9→14
+    [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],
+    // Blue corner right side going up (cells 15-20): col 14, rows 7→2... 
+    // Actually let me simplify with a fixed known mapping
+  ];
+
+  // Use a direct 15x15 grid mapping
+  return buildStandardPath();
+}
+
+function buildStandardPath() {
+  const u = BS / 15;
+  const p = [];
+
+  // Standard Ludo path in a 15×15 grid (0-indexed columns/rows)
+  // Bottom-left to right along row 12
+  for (let c = 0; c <= 5; c++) p.push({ x: (c + 0.5) * u, y: 12.5 * u });  // 0-5  (not standard, let me redo)
+
+  // I'll use the canonical Ludo cell layout
+  return canonicalPath(u);
+}
+
+function canonicalPath(u) {
+  // 52 cells, starting from Red's entry (cell 0 = column 6, row 13) going clockwise
+  const p = [];
+  // Segment 1: go up col 6, rows 13→9 (6 cells: 0-5)
+  for (let r = 13; r >= 9; r--) p.push({ x: 6.5 * u, y: (r + 0.5) * u });
+  // Segment 2: go left row 8, cols 6→1 ... wait that's wrong for clockwise
+
+  // Let me define a correct clockwise path for a 15x15 Ludo board
+  // Cell indices and (col, row) in 15-unit grid:
+  const cells = [
+    // Red path (bottom-left quadrant)
+    [6,13],[6,12],[6,11],[6,10],[6,9],   // 0-4: going up col6
+    [6,8],                                 // 5: corner entry
+    [5,8],[4,8],[3,8],[2,8],[1,8],         // 6-10: going left row8
+    [0,8],                                 // 11: left edge
+    [0,7],                                 // 12: turning
+    [0,6],                                 // 13
+    [1,6],[2,6],[3,6],[4,6],[5,6],         // 14-18: right along row6
+    [6,6],                                 // 19: corner
+    [6,5],[6,4],[6,3],[6,2],[6,1],         // 20-24: up col6
+    [6,0],                                 // 25: top
+    [7,0],                                 // 26
+    [8,0],                                 // 27: Blue entry
+    [8,1],[8,2],[8,3],[8,4],[8,5],         // 28-32: down col8
+    [8,6],                                 // 33
+    [9,6],[10,6],[11,6],[12,6],[13,6],     // 34-38: right row6
+    [14,6],                                // 39
+    [14,7],                                // 40: Green entry
+    [14,8],                                // 41
+    [13,8],[12,8],[11,8],[10,8],[9,8],     // 42-46: left row8
+    [8,8],                                 // 47
+    [8,9],[8,10],[8,11],[8,12],[8,13],     // 48-52: down col8
+    [8,14],                                // 53: bottom
+    [7,14],                                // 54
+  ];
+
+  // Proper 52-cell standard Ludo path:
+  return standardLudoPath(u);
+}
+
+function standardLudoPath(u) {
+  // 52 canonical cells on a 15x15 grid
+  // Each color starts at its designated entry cell
+  const raw = [
+    // 0  Red starts here and goes...
+    [6,13],[6,12],[6,11],[6,10],[6,9],[6,8],   // 0-5
+    [5,8],[4,8],[3,8],[2,8],[1,8],[0,8],        // 6-11
+    [0,7],[0,6],                                // 12-13
+    [1,6],[2,6],[3,6],[4,6],[5,6],[6,6],        // 14-19
+    [6,5],[6,4],[6,3],[6,2],[6,1],[6,0],        // 20-25
+    [7,0],[8,0],                                // 26-27
+    [8,1],[8,2],[8,3],[8,4],[8,5],[8,6],        // 28-33
+    [9,6],[10,6],[11,6],[12,6],[13,6],[14,6],   // 34-39
+    [14,7],[14,8],                              // 40-41
+    [13,8],[12,8],[11,8],[10,8],[9,8],[8,8],    // 42-47
+    [8,9],[8,10],[8,11],[8,12],[8,13],[8,14],   // 48-53 → only 52 total
+    [7,14],                                     // 54 → index 53? we need exactly 52
+  ];
+  // Trim to 52
+  const path52 = raw.slice(0, 52);
+  return path52.map(([c, r]) => ({ x: (c + 0.5) * u, y: (r + 0.5) * u }));
+}
+
+// Home stretch paths (6 cells each, leading to center)
+function getHomeStretchCoords(color) {
+  const u = BS / 15;
+  const stretches = {
+    red:    [[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],        // row 7, going right (left arm, next to red's own base)
+    blue:   [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],    // col 7, going up (bottom arm, next to blue's own base)
+    green:  [[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]],    // row 7, going left
+    yellow: [[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],        // col 7, going down
+  };
+  return stretches[color].map(([c,r]) => ({ x:(c+0.5)*u, y:(r+0.5)*u }));
+}
+
+// ============================================================
+//  DRAW BOARD
+// ============================================================
+function lerpColor(h1, h2, t) {
+  t = Math.max(0, Math.min(1, t));
+  const r1=parseInt(h1.slice(1,3),16),g1=parseInt(h1.slice(3,5),16),b1=parseInt(h1.slice(5,7),16);
+  const r2=parseInt(h2.slice(1,3),16),g2=parseInt(h2.slice(3,5),16),b2=parseInt(h2.slice(5,7),16);
+  return '#'+[Math.round(r1+(r2-r1)*t),Math.round(g1+(g2-g1)*t),Math.round(b1+(b2-b1)*t)]
+    .map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+function drawBoard() {
+  const u = BS / 15;
+  ctx.clearRect(0, 0, BS, BS);
+
+  // 1. White base
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, BS, BS);
+
+  // 2. Draw all 15x15 cells
+  drawGrid(u);
+
+  // 3. Home bases (colored corners, drawn on top)
+  const getPlayer = (color) => players.find(p => p.color === color);
+  const getPct = (pl) => pl ? Math.round((pl.finishedCount / 8) * 100) : 0;
+  const isAct  = (pl) => pl && players[currentPlayer] === pl;
+  const redPl = getPlayer('red'), yelPl = getPlayer('yellow');
+  const bluPl = getPlayer('blue'), grnPl = getPlayer('green');
+
+  drawHomeBase(0,     0,     COLORS.red.hex,    COLORS.red.light,    redPl?.name, getPct(redPl), isAct(redPl));
+  drawHomeBase(9*u,   0,     COLORS.yellow.hex, COLORS.yellow.light, yelPl?.name, getPct(yelPl), isAct(yelPl));
+  drawHomeBase(0,     9*u,   COLORS.blue.hex,   COLORS.blue.light,   bluPl?.name, getPct(bluPl), isAct(bluPl));
+  drawHomeBase(9*u,   9*u,   COLORS.green.hex,  COLORS.green.light,  grnPl?.name, getPct(grnPl), isAct(grnPl));
+
+  // 4. Center area (drawn on top of grid)
+  drawCenter(u);
+
+  // 5. Blocked cells overlay
+  drawBlockedCells(u);
+
+  // 6. Outer border
+  ctx.strokeStyle = '#d4820a';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, BS - 4, BS - 4);
+}
+
+function drawGrid(u) {
+  const path = standardLudoPath(u);
+  const pathMap = {};
+  path.forEach((pt, i) => {
+    const c = Math.round(pt.x / u - 0.5);
+    const r = Math.round(pt.y / u - 0.5);
+    pathMap[`${c},${r}`] = i;
+  });
+  const safeSet  = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+  const entryMap = { 0: COLORS.blue.hex, 13: COLORS.red.hex, 26: COLORS.yellow.hex, 39: COLORS.green.hex };
+
+  for (let r = 0; r < 15; r++) {
+    for (let c = 0; c < 15; c++) {
+      // Skip home-base corners (drawn by drawHomeBase)
+      if ((c < 6 || c > 8) && (r < 6 || r > 8)) continue;
+      // Skip center 3x3 (drawn by drawCenter)
+      if (c >= 6 && c <= 8 && r >= 6 && r <= 8) continue;
+
+      const x = c * u, y = r * u;
+      const key = `${c},${r}`;
+      let fill = '#ffffff', star = false, entryColor = null;
+
+      // Home column lanes — draw cell + number
+      if (c === 7 && r >= 8 && r <= 13) {
+        fill = lerpColor('#aad4ff', COLORS.blue.hex, 0.45 + 0.55 * (13 - r) / 5);
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, u, u);
+        ctx.strokeStyle = '#cccccc'; ctx.lineWidth = 0.6;
+        ctx.strokeRect(x+0.3, y+0.3, u-0.6, u-0.6);
+        const num = 13 - r + 1; // row13=1, row8=6
+        ctx.fillStyle = '#ffffff'; ctx.font = `bold ${u*0.52}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(num, x + u/2, y + u/2);
+        continue;
+      } else if (c === 7 && r >= 1 && r <= 6) {
+        fill = lerpColor('#ffe999', COLORS.yellow.hex, 0.45 + 0.55 * (r - 1) / 5);
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, u, u);
+        ctx.strokeStyle = '#cccccc'; ctx.lineWidth = 0.6;
+        ctx.strokeRect(x+0.3, y+0.3, u-0.6, u-0.6);
+        const num = r; // row1=1, row6=6
+        ctx.fillStyle = '#ffffff'; ctx.font = `bold ${u*0.52}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(num, x + u/2, y + u/2);
+        continue;
+      } else if (r === 7 && c >= 1 && c <= 6) {
+        fill = lerpColor('#ff9999', COLORS.red.hex, 0.45 + 0.55 * (c - 1) / 5);
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, u, u);
+        ctx.strokeStyle = '#cccccc'; ctx.lineWidth = 0.6;
+        ctx.strokeRect(x+0.3, y+0.3, u-0.6, u-0.6);
+        const num = c; // col1=1, col6=6
+        ctx.fillStyle = '#ffffff'; ctx.font = `bold ${u*0.52}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(num, x + u/2, y + u/2);
+        continue;
+      } else if (r === 7 && c >= 8 && c <= 13) {
+        fill = lerpColor('#99eebb', COLORS.green.hex, 0.45 + 0.55 * (13 - c) / 5);
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, u, u);
+        ctx.strokeStyle = '#cccccc'; ctx.lineWidth = 0.6;
+        ctx.strokeRect(x+0.3, y+0.3, u-0.6, u-0.6);
+        const num = 13 - c + 1; // col13=1, col8=6
+        ctx.fillStyle = '#ffffff'; ctx.font = `bold ${u*0.52}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(num, x + u/2, y + u/2);
+        continue;
+      } else if (key in pathMap) {
+        const idx = pathMap[key];
+        if (entryMap[idx]) { entryColor = entryMap[idx]; }
+        else if (safeSet.has(idx)) { fill = '#ddeeff'; star = true; }
+      }
+
+      ctx.fillStyle = entryColor ? entryColor + 'cc' : fill;
+      ctx.fillRect(x, y, u, u);
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = 0.6;
+      ctx.strokeRect(x + 0.3, y + 0.3, u - 0.6, u - 0.6);
+
+      if (star) {
+        ctx.fillStyle = '#8899bb';
+        ctx.font = `${u * 0.52}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', x + u/2, y + u/2);
+      }
+    }
+  }
+}
+
+function drawHomeBase(x, y, color, light, playerName, pct, isActive) {
+  const u = BS / 15;
+  const size = 6 * u;
+
+  // Solid color fill
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, size, size);
+
+  // White inner rounded area
+  const pad = u * 0.45;
+  const innerX = x + pad, innerY = y + pad + u * 0.7;
+  const innerW = size - pad * 2, innerH = size - pad * 2 - u * 1.2;
+  ctx.fillStyle = '#ffffffbb';
+  ctx.beginPath();
+  ctx.roundRect(innerX, innerY, innerW, innerH, 12);
+  ctx.fill();
+
+  // 8 slots: 2 columns × 4 rows, evenly spaced inside inner area
+  const cols = 2, rows = 4;
+  const slotR = u * 0.36;
+  const spacingX = innerW / cols;
+  const spacingY = innerH / rows;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const sx = innerX + spacingX * (col + 0.5);
+      const sy = innerY + spacingY * (row + 0.5);
+
+      // Outer shadow circle
+      ctx.beginPath();
+      ctx.arc(sx, sy, slotR + 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#00000022';
+      ctx.fill();
+
+      // Slot circle
+      ctx.beginPath();
+      ctx.arc(sx, sy, slotR, 0, Math.PI * 2);
+      ctx.fillStyle = color + '66';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  // Player name at top
+  const fontSize = Math.round(u * 0.72);
+  ctx.font = `bold ${fontSize}px Segoe UI, sans-serif`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#00000099';
+  ctx.shadowBlur = 4;
+  ctx.fillText(playerName || '', x + size / 2, y + u * 0.42);
+  ctx.shadowBlur = 0;
+
+  // % at bottom
+  ctx.font = `bold ${Math.round(u * 0.62)}px Segoe UI, sans-serif`;
+  ctx.fillStyle = '#ffffffee';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#00000099';
+  ctx.shadowBlur = 3;
+  ctx.fillText((pct !== undefined ? pct + '%' : ''), x + size / 2, y + size - u * 0.38);
+  ctx.shadowBlur = 0;
+
+  // Active white border
+  if (isActive) {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x + 1.5, y + 1.5, size - 3, size - 3);
+  }
+}
+
+function drawPathCells(u) { /* now handled by drawGrid */ }
+function drawHomeColumns(u) { /* now handled by drawGrid */ }
+
+function drawCenter(u) {
+  // Center 3x3 area: cols 6-8, rows 6-8
+  const x0 = 6*u, y0 = 6*u, sz = 3*u;
+  const cx = x0 + sz/2, cy = y0 + sz/2;
+
+  // White background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x0, y0, sz, sz);
+
+  // 4 triangles: each pointing from a corner to center
+  // Colors match which home column feeds into that triangle edge
+  // Red home col = col7 from bottom → feeds into bottom-center edge → bottom triangle = red
+  // Yellow home col = col7 from top → top triangle = yellow
+  // Blue home col = row7 from left → left triangle = blue  
+  // Green home col = row7 from right → right triangle = green
+  const tl = [x0,    y0   ];
+  const tr = [x0+sz, y0   ];
+  const bl = [x0,    y0+sz];
+  const br = [x0+sz, y0+sz];
+  const cc = [cx,    cy   ];
+
+  const tris = [
+    { pts:[tl,tr,cc], color: COLORS.yellow.hex, key: 'yellow' }, // top → yellow
+    { pts:[tr,br,cc], color: COLORS.green.hex,  key: 'green'  }, // right → green
+    { pts:[br,bl,cc], color: COLORS.red.hex,    key: 'red'    }, // bottom → red
+    { pts:[bl,tl,cc], color: COLORS.blue.hex,   key: 'blue'   }, // left → blue
+  ];
+
+  tris.forEach(({ pts, color }) => {
+    ctx.beginPath();
+    ctx.moveTo(...pts[0]); ctx.lineTo(...pts[1]); ctx.lineTo(...pts[2]);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+
+  // Each player's finished-piece count, shown inside their own triangle
+  tris.forEach(({ pts, key }) => {
+    const pl = players.find(p => p.color === key);
+    if (!pl) return;
+    const [a, b, c2] = pts;
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    const tx = mx + (c2[0] - mx) * 0.42;
+    const ty = my + (c2[1] - my) * 0.42;
+    ctx.font = `bold ${u * 0.4}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#00000099';
+    ctx.shadowBlur = 3;
+    ctx.fillText(pl.finishedCount + '/8', tx, ty);
+    ctx.shadowBlur = 0;
+  });
+
+  // White circle in center
+  ctx.beginPath();
+  ctx.arc(cx, cy, u * 0.62, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  // Trophy
+  ctx.font = `${u * 0.78}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🏆', cx, cy);
+}
+
+// ============================================================
+//  DRAW BLOCKED CELLS (XARIG)
+// ============================================================
+function drawBlockedCells(u) {
+  if (!gameStarted || players.length === 0) return;
+  const blocked = getBlockedCells();
+  if (blocked.size === 0) return;
+
+  const path = standardLudoPath(u);
+
+  blocked.forEach(idx => {
+    const pt = path[idx];
+    if (!pt) return;
+    const blockerColor = getBlockerColor(idx);
+    const hex = blockerColor ? COLORS[blockerColor].hex : '#ffffff';
+
+    // Pulsing border effect (static version — redrawn each frame)
+    const size = u * 0.92;
+
+    // Glow background
+    ctx.fillStyle = hex + '22';
+    ctx.beginPath();
+    ctx.roundRect(pt.x - size / 2, pt.y - size / 2, size, size, 6);
+    ctx.fill();
+
+    // Bold colored border
+    ctx.strokeStyle = hex;
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([4, 2]);
+    ctx.beginPath();
+    ctx.roundRect(pt.x - size / 2, pt.y - size / 2, size, size, 6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 🔒 lock icon
+    ctx.font = `${u * 0.45}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('🔒', pt.x, pt.y - u * 0.32);
   });
 }
 
-function applyWordState(idx, state) {
-  if (idx >= WORDS.length) return;
-  const w = WORDS[idx];
-  w.state = state;
-  if (w.el) {
-    w.el.className = 'w ' + state;
-  }
-}
+// ============================================================
+//  DRAW PIECES
+// ============================================================
+function drawPieces() {
+  const u = BS / 15;
+  const r = u * 0.38;
 
-// ========================================
-// NAV
-// ========================================
-function onSurahChange() {
-  const v = parseInt(document.getElementById('surahSel').value);
-  if (!v) return;
-  curSurah = v;
-  wordPtr = 0;
-  fullText = '';
-  resetUI();
-  renderMushaf();
-}
-function prevSurah() { if (curSurah > 1) { curSurah--; setSelectVal(curSurah); resetUI(); renderMushaf(); } }
-function nextSurah() { if (curSurah < 114 && QURAN[curSurah+1]) { curSurah++; setSelectVal(curSurah); resetUI(); renderMushaf(); } }
-function setSelectVal(v) { document.getElementById('surahSel').value = v; }
+  function drawStack(pl, pos, count, pieceIdxs) {
+    if (!pos) return;
 
-// ========================================
-// SIMILARITY
-// ========================================
-function strip(s) {
-  if (!s) return '';
-  return s
-    // Remove ALL Arabic diacritics (tashkeel, shadda, sukun, etc.)
-    .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g, '')
-    // Normalize alef forms (أ إ آ ٱ ء → ا)
-    .replace(/[أإآٱءٕٔ]/g, 'ا')
-    // Normalize taa marbuta → haa
-    .replace(/ة/g, 'ه')
-    // Normalize alef maqsura → yaa
-    .replace(/ى/g, 'ي')
-    // Remove tatweel (kashida)
-    .replace(/ـ/g, '')
-    // Remove waw with hamza above → waw
-    .replace(/ؤ/g, 'و')
-    // Remove yaa with hamza → yaa
-    .replace(/ئ/g, 'ي')
-    // Normalize lam-alef ligatures
-    .replace(/[ﻵﻶﻻﻼ]/g, 'لا')
-    // Collapse multiple spaces
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-}
+    // Shadow
+    ctx.beginPath();
+    ctx.arc(pos.x + 2, pos.y + 2, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#00000066';
+    ctx.fill();
 
-// Levenshtein distance for better fuzzy matching
-function levenshtein(a, b) {
-  const m = a.length, n = b.length;
-  if (m === 0) return n;
-  if (n === 0) return m;
-  const dp = Array.from({length: m+1}, (_,i) => Array.from({length: n+1}, (_,j) => i===0?j:j===0?i:0));
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
-  return dp[m][n];
-}
+    // Body
+    const grad = ctx.createRadialGradient(pos.x - r * 0.3, pos.y - r * 0.3, r * 0.1, pos.x, pos.y, r);
+    grad.addColorStop(0, COLORS[pl.color].light);
+    grad.addColorStop(1, COLORS[pl.color].hex);
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff88';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
-// ========================================
-// PHONETIC ENGINE — tashkeel → sound
-// ========================================
-// Convert Arabic word (with or without tashkeel) to a phonetic string
-// so we can compare dhawaaqyada (pronunciations) not just xarfaha (letters)
-function toPhonetic(word) {
-  if (!word) return '';
-  let s = word;
-
-  // ── Tashkeel → vowel markers (before removing them) ──
-  // Fatha → 'a', Kasra → 'i', Damma → 'u'
-  // Fathatan → 'an', Kasratan → 'in', Dammatan → 'un'
-  // Shadda doubles the following vowel
-  // Sukun → no vowel (consonant only)
-
-  // Step 1: mark shadda positions — letter before shadda gets doubled
-  s = s.replace(/([؀-ۿ])ّ/g, '$1$1'); // shadda doubles letter
-
-  // Step 2: convert tashkeel to latin vowels
-  s = s
-    .replace(/َ/g, 'a')   // fatha
-    .replace(/ِ/g, 'i')   // kasra
-    .replace(/ُ/g, 'u')   // damma
-    .replace(/ً/g, 'an')  // fathatan (tanwin)
-    .replace(/ٍ/g, 'in')  // kasratan
-    .replace(/ٌ/g, 'un')  // dammatan
-    .replace(/ْ/g, '')    // sukun (no vowel)
-    .replace(/[ؐ-ؚٓ-ٰٟۖ-ۜ۟-۪ۤۧۨ-ۭ]/g, ''); // other diacritics
-
-  // Step 3: map Arabic consonants to simple phonemes
-  s = s
-    .replace(/[أإآٱءئؤ]/g, 'a')  // hamza/alef forms → glottal
-    .replace(/ا/g, 'a')
-    .replace(/ب/g, 'b')
-    .replace(/ت/g, 't')
-    .replace(/ث/g, 'th')
-    .replace(/ج/g, 'j')
-    .replace(/ح/g, 'H')
-    .replace(/خ/g, 'kh')
-    .replace(/د/g, 'd')
-    .replace(/ذ/g, 'dh')
-    .replace(/ر/g, 'r')
-    .replace(/ز/g, 'z')
-    .replace(/س/g, 's')
-    .replace(/ش/g, 'sh')
-    .replace(/ص/g, 'S')
-    .replace(/ض/g, 'D')
-    .replace(/ط/g, 'T')
-    .replace(/ظ/g, 'Z')
-    .replace(/ع/g, 'aa')
-    .replace(/غ/g, 'gh')
-    .replace(/ف/g, 'f')
-    .replace(/ق/g, 'q')
-    .replace(/ك/g, 'k')
-    .replace(/ل/g, 'l')
-    .replace(/م/g, 'm')
-    .replace(/ن/g, 'n')
-    .replace(/ه/g, 'h')
-    .replace(/و/g, 'w')
-    .replace(/ي/g, 'y')
-    .replace(/ى/g, 'a')
-    .replace(/ة/g, 'h')
-    .replace(/ـ/g, '')
-    .replace(/[ﻵﻶﻻﻼ]/g, 'la')
-    .replace(/\s+/g, '')
-    .toLowerCase();
-
-  return s;
-}
-
-// Phonetic similarity score between two Arabic words
-function phonSim(quranWord, spokenWord) {
-  const qP = toPhonetic(quranWord);
-  const sP = toPhonetic(spokenWord);
-  if (!qP || !sP) return 0;
-  if (qP === sP) return 1;
-  const maxLen = Math.max(qP.length, sP.length);
-  const d = levenshtein(qP, sP);
-  return 1 - d / maxLen;
-}
-
-// simFull: returns { base, tajweed }
-// Chrome Arabic speech recognition never returns tashkeel,
-// so we only compare base letters. tajweed always returns 1
-// (reserved for future when tashkeel-aware recog is available).
-function simFull(quranWord, spokenWord) {
-  const qBase = strip(quranWord);
-  const sBase = strip(spokenWord);
-  if (!qBase || !sBase) return { base: 0 };
-
-  if (qBase === sBase) return { base: 1 };
-
-  const minLen = Math.min(qBase.length, sBase.length);
-  const maxLen = Math.max(qBase.length, sBase.length);
-
-  let base = 0;
-  if (maxLen <= 4) {
-    const d = levenshtein(qBase, sBase);
-    base = d <= 1 ? 1 : 0;
-  } else if (qBase.includes(sBase) || sBase.includes(qBase)) {
-    base = minLen / maxLen >= 0.55 ? 0.9 : 0.4;
-  } else {
-    const d = levenshtein(qBase, sBase);
-    base = 1 - d / maxLen;
-  }
-
-  return { base };
-}
-
-// Backward-compat wrapper
-function sim(a, b) { return simFull(a, b).base; }
-
-// ========================================
-// RECORDING — live word tracking
-// ========================================
-function toggleRec() { isRec ? stopRec() : startRec(); }
-
-function startRec() {
-  if (!curSurah) { setStatus('⚠️ Marka hore dooro suurad!',''); return; }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { setStatus('⚠️ Chrome isticmaal — browser-kani ma taageero mic',''); return; }
-
-  recog = new SR();
-  recog.lang = 'ar-SA';
-  recog.continuous = true;
-  recog.interimResults = true;
-  isRec = true;
-  fullText = '';
-  wordPtr = 0;
-
-  // Reset all word states
-  WORDS.forEach(w => { w.state = 'pending'; if(w.el) w.el.className = 'w'; });
-  setActive(0);
-
-  document.getElementById('recBtn').className = 'btn rec';
-  document.getElementById('recLbl').textContent = 'Jooji';
-  document.getElementById('checkBtn').disabled = false;
-  setStatus('🎙 Waa la maqlaayaa... Akhriso Quraanka.','on');
-  updateCurrentWordDisplay();
-
-  let processedLen = 0; // how many chars of finalText we've already matched
-
-  recog.onresult = function(e) {
-    let finalSegment = '';
-    let interimSegment = '';
-
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalSegment += e.results[i][0].transcript;
-      else interimSegment += e.results[i][0].transcript;
+    // Stack count — only shown when 2+ same-color pieces share this spot
+    if (count >= 2) {
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${u * 0.36}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(count, pos.x, pos.y);
     }
 
-    if (finalSegment) {
-      fullText += finalSegment;
-      // Process new final words against Quran text
-      const newWords = finalSegment.trim().split(/\s+/).filter(Boolean);
-      processSpokenWords(newWords);
+    // Highlight if any piece in this stack is movable
+    if (pieceIdxs.some(pi => movablePieces.some(m => m.player === pl && m.pieceIdx === pi))) {
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, r + 3, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
+  }
 
-    // Show current Quran word (with tashkeel) in the display box
-    updateCurrentWordDisplay();
-  };
-
-  recog.onerror = function(e) { if(e.error!=='no-speech') setStatus('Khalad: '+e.error,''); };
-  recog.onend = function() { if(isRec) recog.start(); };
-  recog.start();
-}
-
-// ========================================
-// SOUNDS
-// ========================================
-function playErrorSound() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // Short harsh buzz for error
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(180, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(90, ctx.currentTime + 0.25);
-    gain.gain.setValueAtTime(0.35, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.28);
-  } catch(e) {}
-}
-
-function playSkipSound() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // Two quick descending beeps for skip
-    [0, 0.15].forEach((t, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(i === 0 ? 440 : 330, ctx.currentTime + t);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + t);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.12);
-      osc.start(ctx.currentTime + t);
-      osc.stop(ctx.currentTime + t + 0.13);
+  // Home-base pieces: always drawn individually (each has its own fixed slot, never stacked)
+  players.forEach(pl => {
+    pl.pieces.forEach((piece, pi) => {
+      if (piece.finished || piece.pos !== -1) return;
+      drawStack(pl, getPieceCoord(pl, piece), 1, [pi]);
     });
-  } catch(e) {}
+  });
+
+  // On-board pieces: group same-color pieces sharing the same cell into one stack
+  const groups = {};
+  players.forEach(pl => {
+    pl.pieces.forEach((piece, pi) => {
+      if (piece.finished || piece.pos === -1) return;
+      const key = pl.color + '_' + piece.pos;
+      if (!groups[key]) groups[key] = { pl, piece, idxs: [] };
+      groups[key].idxs.push(pi);
+    });
+  });
+  Object.values(groups).forEach(g => {
+    drawStack(g.pl, getPieceCoord(g.pl, g.piece), g.idxs.length, g.idxs);
+  });
 }
 
-function flashActiveError() {
-  // Flash current active word red briefly then settle to error color
-  if (wordPtr < WORDS.length && WORDS[wordPtr].el) {
-    const el = WORDS[wordPtr].el;
-    el.classList.add('flash-error');
-    setTimeout(() => {
-      el.classList.remove('flash-error');
-      el.className = 'w error';
-    }, 500);
+function getPieceCoord(player, piece) {
+  const u = BS / 15;
+
+  if (piece.pos === -1) {
+    // At home base
+    const homeSlots = getHomeSlots(player.color);
+    return homeSlots[piece.homeSlot];
   }
+
+  if (piece.pos === 150) {
+    // Briefly passing through the center on the way to finishing
+    return { x: 7.5 * u, y: 7.5 * u };
+  }
+
+  if (piece.pos >= 100) {
+    // Home stretch
+    const stretch = getHomeStretchCoords(player.color);
+    const idx = piece.pos - 100;
+    if (idx >= stretch.length) return null; // finished
+    return stretch[idx];
+  }
+
+  // Outer path
+  const path = standardLudoPath(u);
+  return path[piece.pos % 52];
 }
 
-// Show the current Quran word (with full tashkeel) in the display box
-function updateCurrentWordDisplay() {
-  // Find next word with el (skip basmala)
-  let ptr = wordPtr;
-  while (ptr < WORDS.length && !WORDS[ptr].el) ptr++;
+function getHomeSlots(color) {
+  const u = BS / 15;
+  const bases = {
+    red:    { x: 0,      y: 0 },
+    yellow: { x: 9 * u,  y: 0 },
+    blue:   { x: 0,      y: 9 * u },
+    green:  { x: 9 * u,  y: 9 * u },
+  };
+  const b = bases[color];
+  const size = 6 * u;
+  const pad = u * 0.45;
+  const innerX = b.x + pad, innerY = b.y + pad + u * 0.7;
+  const innerW = size - pad * 2, innerH = size - pad * 2 - u * 1.2;
+  const spacingX = innerW / 2;
+  const spacingY = innerH / 4;
+  const slots = [];
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 2; col++) {
+      slots.push({
+        x: innerX + spacingX * (col + 0.5),
+        y: innerY + spacingY * (row + 0.5),
+      });
+    }
+  }
+  return slots;
+}
 
-  const box = document.getElementById('heardBox');
-  const prog = document.getElementById('wordProgress');
+// ============================================================
+//  GAME SETUP
+// ============================================================
+function startGame() {
+  const order = ['red', 'blue', 'green', 'yellow'];
+  players = [];
 
-  if (ptr >= WORDS.length) {
-    box.textContent = '✅';
-    if (prog) prog.textContent = '';
+  order.forEach(color => {
+    const chk = document.getElementById('chk-' + color);
+    if (chk && chk.checked) {
+      const type = document.getElementById('type-' + color).value;
+      players.push({
+        color,
+        name: COLORS[color].name,
+        type, // 'human' or 'ai'
+        pieces: [
+          { pos: -1, homeSlot: 0, finished: false },
+          { pos: -1, homeSlot: 1, finished: false },
+          { pos: -1, homeSlot: 2, finished: false },
+          { pos: -1, homeSlot: 3, finished: false },
+          { pos: -1, homeSlot: 4, finished: false },
+          { pos: -1, homeSlot: 5, finished: false },
+          { pos: -1, homeSlot: 6, finished: false },
+          { pos: -1, homeSlot: 7, finished: false },
+        ],
+        finishedCount: 0,
+      });
+    }
+  });
+
+  if (players.length < 2) {
+    alert('Ugu yaraan 2 ciyaartood dooro!');
     return;
   }
 
-  // Show the Quran word WITH full tashkeel (as stored in WORDS)
-  const w = WORDS[ptr];
-  box.textContent = w.text;
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('game-area').style.display = 'flex';
 
-  // Show progress: word N of total
-  const total = WORDS.filter(x => x.el).length;
-  const done  = WORDS.filter(x => x.el && x.state !== 'pending').length;
-  if (prog) prog.textContent = `${done + 1} / ${total}`;
+  // Size canvas to fill screen (square)
+  const size = Math.min(window.innerWidth, window.innerHeight);
+  BS = Math.floor(size / 15) * 15;
+  canvas.width = BS;
+  canvas.height = BS;
+
+  gameStarted = true;
+  currentPlayer = 0;
+  diceRolled = false;
+
+  updatePlayersPanel();
+  render();
+  updateTurnMsg();
+  showDice2d(1);
+  updateFloatDice();
+
+  // If first player is AI, trigger
+  setTimeout(() => checkAI(), 600);
 }
 
-// Match spoken words against WORDS array starting at wordPtr
-function processSpokenWords(spoken) {
-  spoken.forEach(sw => {
-    // Skip basmala words (no el) silently
-    while (wordPtr < WORDS.length && !WORDS[wordPtr].el) {
-      WORDS[wordPtr].state = 'correct';
-      wordPtr++;
-    }
-    if (wordPtr >= WORDS.length) return;
+function updatePlayersPanel() {
+  // Corner positions by color (fixed layout like the screenshot)
+  const cornerMap = {
+    red:    'corner-tl',
+    yellow: 'corner-tr',
+    blue:   'corner-bl',
+    green:  'corner-br',
+  };
 
-    const { base } = simFull(WORDS[wordPtr].text, sw);
+  // Clear all corners first
+  ['corner-tl','corner-tr','corner-bl','corner-br'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.innerHTML = ''; el.style.color = ''; el.className = 'corner-label'; }
+  });
 
-    if (base >= 0.65) {
-      // Base letters match — correct
-      applyWordState(wordPtr, 'correct');
-      wordPtr++;
-    } else {
-      // Base letters don't match — check if it's a skip (next words match)
-      let foundSkip = false;
-      for (let ahead = 1; ahead <= 5 && wordPtr + ahead < WORDS.length; ahead++) {
-        if (!WORDS[wordPtr + ahead].el) continue;
-        if (sim(WORDS[wordPtr + ahead].text, sw) >= 0.68) {
-          // It IS a skip — mark skipped words as skipped (not error)
-          for (let s2 = 0; s2 < ahead; s2++) {
-            applyWordState(wordPtr + s2, 'skipped');
-          }
-          applyWordState(wordPtr + ahead, 'correct');
-          wordPtr += ahead + 1;
-          foundSkip = true;
-          playSkipSound();
-          break;
+  players.forEach((pl, i) => {
+    const isActive = (i === currentPlayer);
+    const cornerId = cornerMap[pl.color] || 'corner-tl';
+    const el = document.getElementById(cornerId);
+    if (!el) return;
+
+    const done = pl.finishedCount;
+    const typeIcon = pl.type === 'ai' ? '🤖' : '👤';
+    const pct = Math.round((done / 8) * 100);
+
+    el.style.color = COLORS[pl.color].hex;
+    el.innerHTML = `${typeIcon} ${pl.name}<br><span style="font-size:0.7em;color:#ccc">${pct}%</span>`;
+    if (isActive) el.classList.add('active-corner');
+  });
+}
+
+function render() {
+  drawBoard();
+  drawPieces();
+}
+
+// ============================================================
+//  DICE
+// ============================================================
+const DIE_PATTERNS = {
+  1: [false,false,false,false,true,false,false],  // center
+  2: [true,false,false,false,false,false,true],
+  3: [true,false,false,false,true,false,true],
+  4: [true,true,false,false,false,true,true],
+  5: [true,true,false,false,true,true,true],
+  6: [true,true,true,false,false,true,true],
+};
+// grid areas: a b c d(center) e f g  → actually 7 pips for standard die
+// positions:  1:tl, 2:tr, 3:ml, 4:center, 5:mr, 6:bl, 7:br
+const DIE_PIP_MAP = {
+  1: [false,false,false,true,false,false,false],
+  2: [true,false,false,false,false,false,true],
+  3: [true,false,false,true,false,false,true],
+  4: [true,true,false,false,false,true,true],
+  5: [true,true,false,true,false,true,true],
+  6: [true,true,true,false,true,true,true],
+};
+
+function showDice(val) {
+  const pips = DIE_PIP_MAP[val];
+  for (let i = 1; i <= 7; i++) {
+    const el = document.getElementById('p' + i);
+    if (el) el.classList.toggle('hidden', !pips[i - 1]);
+  }
+}
+
+function rollDice() { window.rollDice(); }
+
+function afterRoll() { window.afterRoll(); }
+
+// ============================================================
+//  PIECE MOVEMENT LOGIC
+// ============================================================
+function getStartCell(color) {
+  return { red: 13, blue: 0, green: 39, yellow: 26 }[color];
+}
+
+function getHomeStretchEntry(color) {
+  // The path cell just before entering home stretch
+  return { red: 12, blue: 51, green: 38, yellow: 25 }[color];
+}
+
+function getMovablePieces(pl, dice) {
+  const movable = [];
+  pl.pieces.forEach((piece, i) => {
+    if (piece.finished) return;
+
+    if (piece.pos === -1) {
+      // At home base: can only come out on 6
+      if (dice === 6) {
+        const startCell = getStartCell(pl.color);
+        // Check if start cell is blocked by another color
+        const blockerColor = getBlockerColor(startCell);
+        if (!blockerColor || blockerColor === pl.color) {
+          movable.push({ player: pl, pieceIdx: i });
         }
       }
-      if (!foundSkip) {
-        // Not a skip — genuine error on current word, stays highlighted red
-        flashActiveError();
-        playErrorSound();
-        wordPtr++;
+    } else if (piece.pos >= 100) {
+      // Already in home stretch — no blocking
+      const newPos = calcNewPos(pl.color, piece.pos, dice);
+      if (newPos !== null) movable.push({ player: pl, pieceIdx: i });
+    } else {
+      // On outer path — check xarig step by step using dice count
+      const newPos = calcNewPos(pl.color, piece.pos, dice);
+      if (newPos !== null) {
+        if (!isPathBlocked(pl.color, piece.pos, dice)) {
+          movable.push({ player: pl, pieceIdx: i });
+        }
       }
     }
-
-    // Advance past basmala gaps, set next word active
-    while (wordPtr < WORDS.length && !WORDS[wordPtr].el) wordPtr++;
-    if (wordPtr < WORDS.length) setActive(wordPtr);
-    updateCurrentWordDisplay();
   });
+  return movable;
 }
 
-function stopRec() {
-  isRec = false;
-  if (recog) { recog.onend = null; recog.stop(); }
-  document.getElementById('recBtn').className = 'btn primary';
-  document.getElementById('recLbl').textContent = 'Bilow Akhris';
-  setStatus('La joojiyay. Riix "Hubi" si natiijada loo arko.','ok');
-}
-
-// ========================================
-// CHECK
-// ========================================
-function doCheck() {
-  stopRec();
-  if (!fullText.trim()) { setStatus('⚠️ Wax lama maqlin!',''); return; }
-
-  let nC=0, nE=0, nS=0, nT=0, errs=[];
-  WORDS.forEach((w,i) => {
-    if (!w.el) return; // basmala skip
-    if (w.state==='correct') nC++;
-    else if (w.state==='error') { nE++; errs.push({type:'error',w:w.text}); }
-    else if (w.state==='tajweed-error') { nT++; errs.push({type:'tajweed',w:w.text}); }
-    else if (w.state==='skipped') { nS++; errs.push({type:'skip',w:w.text}); }
-    else { nS++; errs.push({type:'skip',w:w.text}); } // pending = not reached
-  });
-
-  const total = WORDS.filter(w=>w.el).length;
-  const pct = total > 0 ? Math.round(nC/total*100) : 0;
-
-  document.getElementById('scoreRow').style.display='flex';
-  document.getElementById('sCorrect').textContent=nC;
-  document.getElementById('sErrors').textContent=nE;
-  document.getElementById('sSkip').textContent=nS;
-  document.getElementById('sPct').textContent=pct+'%';
-  // Show tajweed card if any
-  const tajCard = document.getElementById('tajCard');
-  if (tajCard) { tajCard.querySelector('.n').textContent=nT; tajCard.style.display= nT>0 ? '' : 'none'; }
-
-  let fb='';
-  if(nE===0 && nS===0 && nT===0){
-    fb='✅ Aad baad u fiicantahay! Dhammaan erayada si sax ah ayaad u akhrisay.\n\nAllah kaa barakeeyo akhriskaaga! 🌟';
-  } else {
-    fb=`📊 Natiijada:\n✅ Sax: ${nC}   ❌ Khalad: ${nE}   🔴 Xarakad: ${nT}   ⏭ Booday: ${nS}\n\n`;
-    if(errs.length){
-      fb+='Khaladaadka:\n';
-      errs.slice(0,12).forEach(e=>{
-        if(e.type==='error')   fb += `• ❌ ${e.w} (eray khalad)\n`;
-        else if(e.type==='tajweed') fb += `• 🔴 ${e.w} (xarakad/shedka khalad)\n`;
-        else                   fb += `• ⏭ ${e.w} (la booday)\n`;
-      });
-      if(errs.length>12) fb+=`... iyo ${errs.length-12} kale\n`;
-    }
-    fb+='\n💡 Taallo:\n';
-    if(nS>0) fb+='• Ha dedejin — erayada dhamaystir.\n';
-    if(nE>0) fb+='• Erayada cas dib u akhriso si tartiib ah.\n';
-    if(nT>0) fb+='• Erayada guduud-casaan ah: xarakada iyo shedka si fiican u akhriso.\n';
-    fb += pct>=80 ? '• Wanaagsan! Sii wad tababarka.\n' : '• Bilow suurad kooban oo si tartiib ah u akhriso.\n';
+function calcNewPos(color, currentPos, dice) {
+  // In home stretch
+  if (currentPos >= 100) {
+    const stretchPos = currentPos - 100;
+    const newStretch = stretchPos + dice;
+    if (newStretch > 5) return null; // overshoot
+    if (newStretch === 5) return 'WIN';
+    return 100 + newStretch;
   }
-  document.getElementById('fbBody').textContent=fb;
-  document.getElementById('fbBox').style.display='block';
-  const em=pct>=90?'🌟':pct>=70?'👍':'📖';
-  const tajPart = nT > 0 ? `, ${nT} xarakad` : '';
-  setStatus(`${em} Dhibcahaagu: ${pct}% — ${nC} sax, ${nE} khalad${tajPart}, ${nS} booday`,'ok');
+
+  // On outer path
+  const homeEntry = getHomeStretchEntry(color);
+  const start = getStartCell(color);
+
+  // Calculate distance from start
+  const distFromStart = (currentPos - start + 52) % 52;
+  const newDist = distFromStart + dice;
+
+  if (newDist >= 52) {
+    // Going into home stretch
+    const overflow = newDist - 52;
+    if (overflow > 5) return null; // overshoot
+    if (overflow === 5) return 'WIN';
+    return 100 + overflow;
+  }
+
+  return (start + newDist) % 52;
 }
 
-// ========================================
-// RESET / UTIL
-// ========================================
-function resetUI(){
-  fullText=''; wordPtr=0;
-  document.getElementById('heardBox').textContent='—';
-  const _prog = document.getElementById('wordProgress');
-  if (_prog) _prog.textContent='';
-  document.getElementById('fbBox').style.display='none';
-  document.getElementById('scoreRow').style.display='none';
-  document.getElementById('checkBtn').disabled=true;
-  document.getElementById('recBtn').className='btn primary';
-  document.getElementById('recLbl').textContent='Bilow Akhris';
-  setStatus('Diyaar. Riix "Bilow Akhris" kadibna akhriso.','');
-}
-function resetAll(){
-  stopRec();
-  WORDS.forEach(w=>{ w.state='pending'; if(w.el) w.el.className='w'; });
-  resetUI();
-  wordPtr=0;
-  if(curSurah) setActive(0);
-}
-function setStatus(msg,mode){
-  document.getElementById('statusTxt').textContent=msg;
-  document.getElementById('sdot').className='dot'+(mode?' '+mode:'');
+function movePiece(pl, pieceIdx) {
+  const piece = pl.pieces[pieceIdx];
+  movablePieces = [];
+
+  function finishTurn() {
+    render();
+    updatePlayersPanel();
+
+    // Extra turn on 6
+    if (diceValue === 6) {
+      diceRolled = false;
+      diceValue = 0;
+      updatePlayersPanel(); // rebuild so dice shows in card
+      updateTurnMsg(`6 helay! Mar labaad rid! 🎲`);
+      checkAI();
+    } else {
+      nextTurn();
+    }
+  }
+
+  if (piece.pos === -1) {
+    // Leave home
+    piece.pos = getStartCell(pl.color);
+    playSound('exit');
+    showToast(`${pl.name} wuu baxay!`);
+    finishTurn();
+    return;
+  }
+
+  const newPos = calcNewPos(pl.color, piece.pos, diceValue);
+
+  if (newPos === 'WIN') {
+    // Let the piece visibly pass through the center before it's marked finished
+    piece.pos = 150;
+    playSound('move');
+    render();
+
+    setTimeout(() => {
+      piece.pos = 999;
+      piece.finished = true;
+      pl.finishedCount++;
+      playSound('piece_done');
+      showToast(`${pl.name} — Qayb ${pieceIdx + 1} guul! 🏆`);
+
+      if (pl.finishedCount === 8) {
+        render();
+        updatePlayersPanel();
+        playSound('win');
+        setTimeout(() => showWin(pl), 800);
+        return;
+      }
+      finishTurn();
+    }, 450);
+    return;
+  }
+
+  piece.pos = newPos;
+  playSound('move');
+  checkCapture(pl, newPos);
+  finishTurn();
 }
 
-init();
+function checkCapture(attacker, pos) {
+  if (pos < 0 || pos >= 100) return;
+  const safeCells = new Set([0, 13, 26, 39, 8, 21, 34, 47]);
+  if (safeCells.has(pos)) return;
+
+  // Cannot capture on a xarig (blocked) cell — it's a fortress
+  const blocked = getBlockedCells();
+  if (blocked.has(pos)) return;
+
+  players.forEach(pl => {
+    if (pl.color === attacker.color) return;
+    pl.pieces.forEach(piece => {
+      if (piece.pos === pos && !piece.finished) {
+        piece.pos = -1;
+        playSound('capture');
+        showToast(`${attacker.name} ayaa ${pl.name} riday! 💥`);
+      }
+    });
+  });
+}
+
+function nextTurn() {
+  diceRolled = false;
+  diceValue = 0;
+
+  // Skip finished players
+  let next = (currentPlayer + 1) % players.length;
+  let tries = 0;
+  while (players[next].finishedCount === 8 && tries < players.length) {
+    next = (next + 1) % players.length;
+    tries++;
+  }
+  currentPlayer = next;
+
+  // Rebuild panel first — this creates the new roll-btn for the new active player
+  updatePlayersPanel();
+  updateTurnMsg();
+  render();
+
+  setTimeout(() => checkAI(), 400);
+}
+
+function checkAI() {
+  const pl = players[currentPlayer];
+  if (pl.type === 'ai' && !diceRolled) {
+    setTimeout(() => {
+      rollDice();
+    }, 900);
+  }
+}
+
+// AI click handler: auto-move after roll
+function aiAutoMove() {
+  const pl = players[currentPlayer];
+  if (pl.type === 'ai' && diceRolled && movablePieces.length > 0) {
+    // Simple AI: prefer captures > progress > come out
+    let best = movablePieces[0];
+
+    movablePieces.forEach(m => {
+      const piece = m.player.pieces[m.pieceIdx];
+      if (piece.pos === -1) return; // prefer on-board
+
+      // Check if can capture
+      const newPos = calcNewPos(m.player.color, piece.pos, diceValue);
+      if (typeof newPos === 'number' && newPos < 100) {
+        const canCapture = players.some(opl => {
+          if (opl.color === pl.color) return false;
+          return opl.pieces.some(op => op.pos === newPos && !op.finished);
+        });
+        if (canCapture) best = m;
+      }
+    });
+
+    setTimeout(() => movePiece(best.player, best.pieceIdx), 700);
+  }
+}
+
+// Override afterRoll to trigger AI auto-move
+const originalAfterRoll = afterRoll;
+
+// Canvas click for human players
+canvas.addEventListener('click', (e) => {
+  const pl = players[currentPlayer];
+  if (pl.type !== 'human' || !diceRolled || movablePieces.length === 0) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = BS / rect.width;
+  const scaleY = BS / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+  const u = BS / 15;
+
+  let clicked = null;
+  let minDist = u;
+
+  movablePieces.forEach(m => {
+    const coord = getPieceCoord(m.player, m.player.pieces[m.pieceIdx]);
+    if (!coord) return;
+    const d = Math.hypot(mx - coord.x, my - coord.y);
+    if (d < minDist) { minDist = d; clicked = m; }
+  });
+
+  if (clicked) movePiece(clicked.player, clicked.pieceIdx);
+});
+
+function updateTurnMsg(msg) {
+  const pl = players[currentPlayer];
+  const el = document.getElementById('turn-bar');
+  if (!el) return;
+  const txt = msg || (pl.type === 'ai' ? `🤖 ${pl.name} dooranayaa...` : `👇 ${pl.name} — Taabo dice-ka`);
+  el.textContent = txt;
+}
+
+function showWin(pl) {
+  document.getElementById('win-msg').textContent = `${pl.name} ayaa guuleystay! Hambalyo! 🎉`;
+  document.getElementById('win-overlay').classList.add('show');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Patch afterRoll to support AI
+const _origAfterRoll = window.afterRoll;
+window.afterRoll = function() {
+  const pl = players[currentPlayer];
+  movablePieces = getMovablePieces(pl, diceValue);
+
+  if (movablePieces.length === 0) {
+    // Check if a xarig (block) is the reason
+    let xarigBlocking = false;
+    pl.pieces.forEach(p => {
+      if (p.finished || p.pos < 0 || p.pos >= 100) return;
+      if (isPathBlocked(pl.color, p.pos, diceValue)) xarigBlocking = true;
+    });
+    const msg = xarigBlocking
+      ? `${pl.name}: ${diceValue} — Xarig! Jidka waa xiran yahay 🔒`
+      : `${pl.name}: ${diceValue} — Guri macno ma leh`;
+    if (xarigBlocking) playSound('xarig'); else playSound('dice');
+    showToast(msg);
+    setTimeout(() => nextTurn(), 1500);
+    return;
+  }
+
+  updateTurnMsg(`${pl.name} — ${pl.type === 'ai' ? '🤖 AI dooranayaa...' : 'Dooro qaybta'}`);
+  render();
+
+  if (pl.type === 'ai') {
+    aiAutoMove();
+  } else if (movablePieces.length === 1) {
+    setTimeout(() => movePiece(movablePieces[0].player, movablePieces[0].pieceIdx), 500);
+  }
+};
+
+
+// ============================================================
+//  FLOATING 2D DICE SYSTEM
+// ============================================================
+
+const D2_PIPS = {
+  1: [false,false,false,true, false,false,false],
+  2: [true, false,false,false,false,false,true ],
+  3: [true, false,false,true, false,false,true ],
+  4: [true, true, false,false,false,true, true ],
+  5: [true, true, false,true, false,true, true ],
+  6: [true, true, true, false,true, true, true ],
+};
+
+function showDice2d(val) {
+  const pips = D2_PIPS[val] || D2_PIPS[1];
+  for (let i = 1; i <= 7; i++) {
+    const el = document.getElementById('dp' + i);
+    if (el) el.classList.toggle('show', pips[i-1]);
+  }
+}
+
+function animateDice2d(finalVal, onDone) {
+  const dice = document.getElementById('dice-2d');
+  if (!dice) { onDone && onDone(); return; }
+  dice.classList.remove('bounce');
+  void dice.offsetWidth;
+  dice.classList.add('bounce');
+
+  let count = 0;
+  const iv = setInterval(() => {
+    showDice2d(Math.floor(Math.random() * 6) + 1);
+    count++;
+    if (count >= 10) {
+      clearInterval(iv);
+      // Wait for animation to finish, then show final value and stay still
+      setTimeout(() => {
+        dice.classList.remove('bounce');
+        showDice2d(finalVal);
+        onDone && onDone();
+      }, 350);
+    }
+  }, 45);
+}
+
+function updateFloatDiceLabel(msg) {
+  const lbl = document.getElementById('float-dice-label');
+  if (lbl) lbl.textContent = msg;
+}
+
+function setFloatDiceDisabled(dis) {
+  const wrap = document.getElementById('float-dice-wrap');
+  if (!wrap) return;
+  if (dis) wrap.classList.add('disabled');
+  else wrap.classList.remove('disabled');
+}
+
+function rollDiceFloat() {
+  const pl = players[currentPlayer];
+  if (!pl || pl.type === 'ai' || diceRolled) return;
+
+  setFloatDiceDisabled(true);
+  updateFloatDiceLabel('...');
+  playSound('dice');
+
+  const final = Math.floor(Math.random() * 6) + 1;
+  animateDice2d(final, () => {
+    diceValue = final;
+    diceRolled = true;
+    updateFloatDiceLabel('✓ ' + final);
+    showDice(final);
+    setTimeout(() => window.afterRoll(), 200);
+  });
+}
+
+// Override rollDice globally — AI uses instant roll, human uses float dice
+window.rollDice = function() {
+  const pl = players[currentPlayer];
+  if (!pl || diceRolled) return;
+
+  if (pl.type === 'ai') {
+    playSound('dice');
+    setTimeout(() => {
+      diceValue = Math.floor(Math.random() * 6) + 1;
+      diceRolled = true;
+      showDice(diceValue);
+      window.afterRoll();
+    }, 300);
+  } else {
+    rollDiceFloat();
+  }
+};
+
+// Position dice at the current player's homebase corner
+function positionDiceAtPlayer() {
+  const wrap = document.getElementById('float-dice-wrap');
+  if (!wrap || !players[currentPlayer]) return;
+
+  const color = players[currentPlayer].color;
+  const u = BS / 15;
+
+  // Each homebase is 6u x 6u. Dice goes in the middle of the homebase.
+  // Board corners: red=TL, yellow=TR, blue=BL, green=BR
+  const corners = {
+    red:    { x: 0,      y: 0 },
+    yellow: { x: 9 * u,  y: 0 },
+    blue:   { x: 0,      y: 9 * u },
+    green:  { x: 9 * u,  y: 9 * u },
+  };
+
+  const c = corners[color] || corners.red;
+  // Center of homebase (6u wide, 6u tall), but account for canvas scaling
+  const boardWrap = document.getElementById('board-wrap');
+  const canvas = document.getElementById('ludo-board');
+  const scale = canvas.offsetWidth / BS;
+
+  const cx = (c.x + 3 * u) * scale;
+  const cy = (c.y + 3 * u) * scale;
+
+  wrap.style.left = cx + 'px';
+  wrap.style.top  = cy + 'px';
+  wrap.style.transform = 'translate(-50%, -50%)';
+}
+
+// Show/hide float dice based on turn
+function updateFloatDice() {
+  const pl = players[currentPlayer];
+  if (!pl) return;
+  const wrap = document.getElementById('float-dice-wrap');
+  if (!wrap) return;
+
+  positionDiceAtPlayer();
+
+  if (pl.type === 'ai') {
+    wrap.classList.add('hidden-dice');
+  } else {
+    wrap.classList.remove('hidden-dice');
+    if (diceRolled) {
+      wrap.classList.add('disabled');
+      wrap.style.opacity = '1';
+      updateFloatDiceLabel('✓ ' + diceValue);
+      showDice2d(diceValue);
+    } else {
+      wrap.classList.remove('disabled');
+      wrap.style.opacity = '1';
+      updateFloatDiceLabel('Taabo!');
+    }
+  }
+}
+
+// Hook updatePlayersPanel to also update float dice
+const _origUpdatePlayersPanel = updatePlayersPanel;
+window.updatePlayersPanel = function() {
+  _origUpdatePlayersPanel();
+  updateFloatDice();
+};
+
+// Hook afterRoll to refresh float dice state
+const __origAfterRoll = window.afterRoll;
+window.afterRoll = function() {
+  updateFloatDice();
+  __origAfterRoll();
+};
+
+// Initialize on game start
+const _origRender = render;
+window.render = function() { _origRender(); };
+
+setTimeout(() => {
+  showDice2d(1);
+  updateFloatDice();
+}, 100);
+
+// Initial dice display
+showDice(1);
 </script>
 </body>
 </html>
