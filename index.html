@@ -59,6 +59,21 @@
 
   .type-select { background: #1a1a2e; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 4px 8px; }
 
+  .piece-count-btn {
+    background: #1a1a2e;
+    color: #fff;
+    border: 2px solid #555;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 44px;
+  }
+  .piece-count-btn:hover { border-color: #ffd700; color: #ffd700; }
+  .piece-count-btn.active-count { background: #ffd700; color: #000; border-color: #ffd700; }
+
   #start-btn {
     margin-top: 20px;
     padding: 12px 40px;
@@ -418,6 +433,18 @@
     </select>
   </div>
 
+  <div style="margin-top:18px; padding:12px; background:#0d0d1a; border-radius:8px; border:2px solid #444;">
+    <label style="color:#ffd700; font-size:0.95rem; font-weight:bold;">🐎 Tirada Xoolaha (mid kastaa):</label>
+    <div style="display:flex; justify-content:center; gap:10px; margin-top:10px; flex-wrap:wrap;">
+      <button class="piece-count-btn" onclick="selectPieceCount(2)" data-count="2">2</button>
+      <button class="piece-count-btn" onclick="selectPieceCount(3)" data-count="3">3</button>
+      <button class="piece-count-btn" onclick="selectPieceCount(4)" data-count="4">4</button>
+      <button class="piece-count-btn" onclick="selectPieceCount(5)" data-count="5">5</button>
+      <button class="piece-count-btn" onclick="selectPieceCount(6)" data-count="6">6</button>
+      <button class="piece-count-btn active-count" onclick="selectPieceCount(8)" data-count="8">8</button>
+    </div>
+  </div>
+
   <button id="start-btn" onclick="startGame()">▶ Bilow Ciyaarta</button>
 </div>
 
@@ -553,6 +580,14 @@ function isPathBlocked(movingColor, fromPos, steps) {
 //  SOUND SYSTEM (Web Audio API — no external files needed)
 // ============================================================
 let audioCtx = null;
+let selectedPieceCount = 8;
+
+function selectPieceCount(n) {
+  selectedPieceCount = n;
+  document.querySelectorAll('.piece-count-btn').forEach(btn => {
+    btn.classList.toggle('active-count', parseInt(btn.dataset.count) === n);
+  });
+}
 
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -594,41 +629,47 @@ function playSound(type) {
     }
 
     else if (type === 'capture') {
-      // Cod oohin 😢 — descending wail with vibrato
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      const vibrato = ac.createOscillator();
-      const vibratoGain = ac.createGain();
-
-      vibrato.frequency.setValueAtTime(5, now);
-      vibratoGain.gain.setValueAtTime(18, now);
-      vibrato.connect(vibratoGain);
-      vibratoGain.connect(osc.frequency);
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.linearRampToValueAtTime(200, now + 0.7);
-
-      gain.gain.setValueAtTime(0.0, now);
-      gain.gain.linearRampToValueAtTime(0.45, now + 0.05);
-      gain.gain.linearRampToValueAtTime(0.35, now + 0.35);
-      gain.gain.linearRampToValueAtTime(0.0, now + 0.75);
-
-      osc.connect(gain); gain.connect(ac.destination);
-      vibrato.start(now); osc.start(now);
-      vibrato.stop(now + 0.8); osc.stop(now + 0.8);
-
-      // Second sob
-      const osc2 = ac.createOscillator();
-      const gain2 = ac.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(450, now + 0.5);
-      osc2.frequency.linearRampToValueAtTime(150, now + 1.1);
-      gain2.gain.setValueAtTime(0.0, now + 0.5);
-      gain2.gain.linearRampToValueAtTime(0.3, now + 0.55);
-      gain2.gain.linearRampToValueAtTime(0.0, now + 1.1);
-      osc2.connect(gain2); gain2.connect(ac.destination);
-      osc2.start(now + 0.5); osc2.stop(now + 1.15);
+      // Cod oohin 😢 — "Hoooy!" human cry sound
+      // Layer 1: main wailing tone with vibrato
+      const createCry = (startTime, startFreq, endFreq, dur, vol) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        const vib = ac.createOscillator();
+        const vibG = ac.createGain();
+        vib.frequency.value = 6;
+        vibG.gain.value = 20;
+        vib.connect(vibG); vibG.connect(osc.frequency);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(startFreq, startTime);
+        osc.frequency.linearRampToValueAtTime(endFreq, startTime + dur * 0.6);
+        osc.frequency.linearRampToValueAtTime(endFreq * 0.85, startTime + dur);
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(vol, startTime + 0.04);
+        gain.gain.setValueAtTime(vol, startTime + dur * 0.5);
+        gain.gain.linearRampToValueAtTime(0, startTime + dur);
+        osc.connect(gain); gain.connect(ac.destination);
+        vib.start(startTime); osc.start(startTime);
+        vib.stop(startTime + dur + 0.05); osc.stop(startTime + dur + 0.05);
+      };
+      // Layer 2: breath noise underneath
+      const noise = ac.createBuffer(1, ac.sampleRate * 1.2, ac.sampleRate);
+      const nd = noise.getChannelData(0);
+      for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1);
+      const nSrc = ac.createBufferSource();
+      nSrc.buffer = noise;
+      const nFilter = ac.createBiquadFilter();
+      nFilter.type = 'bandpass';
+      nFilter.frequency.value = 800;
+      nFilter.Q.value = 0.5;
+      const nGain = ac.createGain();
+      nGain.gain.setValueAtTime(0, now);
+      nGain.gain.linearRampToValueAtTime(0.06, now + 0.1);
+      nGain.gain.linearRampToValueAtTime(0.0, now + 1.2);
+      nSrc.connect(nFilter); nFilter.connect(nGain); nGain.connect(ac.destination);
+      nSrc.start(now); nSrc.stop(now + 1.2);
+      // "Hoooy!" — two sob waves
+      createCry(now,        320, 210, 0.55, 0.4);
+      createCry(now + 0.6,  280, 160, 0.55, 0.3);
     }
 
     else if (type === 'xarig') {
@@ -645,20 +686,41 @@ function playSound(type) {
     }
 
     else if (type === 'exit') {
-      // Cod qosol 😄 — bouncy ascending laughing tones
-      const laughFreqs = [350, 420, 500, 420, 500, 600, 500, 650];
-      laughFreqs.forEach((freq, i) => {
+      // Cod qosol 😄 — "Ha ha ha!" human laugh sound
+      const laughSyllable = (t, freq, dur) => {
+        // Each "ha" = quick breath burst + voiced tone
         const osc = ac.createOscillator();
         const gain = ac.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + i * 0.07);
-        osc.frequency.linearRampToValueAtTime(freq * 1.08, now + i * 0.07 + 0.05);
-        gain.gain.setValueAtTime(0.0, now + i * 0.07);
-        gain.gain.linearRampToValueAtTime(0.28, now + i * 0.07 + 0.015);
-        gain.gain.linearRampToValueAtTime(0.0, now + i * 0.07 + 0.065);
+        const vib = ac.createOscillator();
+        const vibG = ac.createGain();
+        vib.frequency.value = 7;
+        vibG.gain.value = 12;
+        vib.connect(vibG); vibG.connect(osc.frequency);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq * 1.1, t);
+        osc.frequency.linearRampToValueAtTime(freq, t + dur * 0.3);
+        osc.frequency.linearRampToValueAtTime(freq * 0.9, t + dur);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.38, t + 0.02);
+        gain.gain.linearRampToValueAtTime(0.28, t + dur * 0.6);
+        gain.gain.linearRampToValueAtTime(0, t + dur);
         osc.connect(gain); gain.connect(ac.destination);
-        osc.start(now + i * 0.07); osc.stop(now + i * 0.07 + 0.08);
-      });
+        vib.start(t); osc.start(t);
+        vib.stop(t + dur + 0.05); osc.stop(t + dur + 0.05);
+        // breath click at start of each ha
+        const buf = ac.createBuffer(1, ac.sampleRate * 0.03, ac.sampleRate);
+        const bdata = buf.getChannelData(0);
+        for (let i = 0; i < bdata.length; i++) bdata[i] = (Math.random() * 2 - 1) * (1 - i/bdata.length);
+        const bSrc = ac.createBufferSource();
+        bSrc.buffer = buf;
+        const bGain = ac.createGain(); bGain.gain.value = 0.15;
+        bSrc.connect(bGain); bGain.connect(ac.destination);
+        bSrc.start(t); bSrc.stop(t + 0.04);
+      };
+      // "Ha! Ha! Ha!" — three laughs, each slightly higher
+      laughSyllable(now,        260, 0.13);
+      laughSyllable(now + 0.18, 290, 0.13);
+      laughSyllable(now + 0.36, 320, 0.15);
     }
 
     else if (type === 'win') {
@@ -845,7 +907,34 @@ function drawBoard() {
 
   // 3. Home bases (colored corners, drawn on top)
   const getPlayer = (color) => players.find(p => p.color === color);
-  const getPct = (pl) => pl ? Math.round((pl.finishedCount / 8) * 100) : 0;
+  const getPct = (pl) => {
+    if (!pl || !pl.pieces.length) return null;
+    const total = pl.pieces.length;
+    // Check if any piece has left home
+    const anyOut = pl.pieces.some(p => p.pos !== -1);
+    if (!anyOut) return null;
+
+    // Total steps to finish = 56 outer + 6 home stretch = 62
+    const FINISH_STEPS = 62;
+    let totalProgress = 0;
+    pl.pieces.forEach(p => {
+      if (p.pos === -1) {
+        totalProgress += 0;
+      } else if (p.pos === 999 || p.finished) {
+        totalProgress += FINISH_STEPS; // fully done
+      } else if (p.pos === 150) {
+        totalProgress += FINISH_STEPS; // transitioning to finish
+      } else if (p.pos >= 100) {
+        // Home stretch: 100=step1, 105=step6
+        totalProgress += 56 + (p.pos - 100 + 1);
+      } else {
+        // Outer path: pos 0–55
+        totalProgress += p.pos + 1;
+      }
+    });
+    const pct = Math.round((totalProgress / (total * FINISH_STEPS)) * 100);
+    return pct;
+  };
   const isAct  = (pl) => pl && players[currentPlayer] === pl;
   const redPl = getPlayer('red'), yelPl = getPlayer('yellow');
   const bluPl = getPlayer('blue'), grnPl = getPlayer('green');
@@ -1013,14 +1102,17 @@ function drawHomeBase(x, y, color, light, playerName, pct, isActive) {
   ctx.fillText(playerName || '', x + size / 2, y + u * 0.42);
   ctx.shadowBlur = 0;
 
-  // % at bottom
-  ctx.font = `bold ${Math.round(u * 0.62)}px Segoe UI, sans-serif`;
-  ctx.fillStyle = '#ffffffee';
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = '#00000099';
-  ctx.shadowBlur = 3;
-  ctx.fillText((pct !== undefined ? pct + '%' : ''), x + size / 2, y + size - u * 0.38);
-  ctx.shadowBlur = 0;
+  // % below player name (clearly visible)
+  if (pct !== null && pct !== undefined) {
+    ctx.font = `bold ${Math.round(u * 0.58)}px Segoe UI, sans-serif`;
+    ctx.fillStyle = '#ffff00';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#000000cc';
+    ctx.shadowBlur = 4;
+    ctx.fillText(pct + '%', x + size / 2, y + u * 0.95);
+    ctx.shadowBlur = 0;
+  }
 
   // Active white border
   if (isActive) {
@@ -1086,7 +1178,7 @@ function drawCenter(u) {
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = '#00000099';
     ctx.shadowBlur = 3;
-    ctx.fillText(pl.finishedCount + '/8', tx, ty);
+    ctx.fillText(pl.finishedCount + '/' + pl.pieces.length, tx, ty);
     ctx.shadowBlur = 0;
   });
 
@@ -1283,20 +1375,15 @@ function startGame() {
     const chk = document.getElementById('chk-' + color);
     if (chk && chk.checked) {
       const type = document.getElementById('type-' + color).value;
+      const pcs = [];
+      for (let i = 0; i < selectedPieceCount; i++) {
+        pcs.push({ pos: -1, homeSlot: i, finished: false });
+      }
       players.push({
         color,
         name: COLORS[color].name,
-        type, // 'human' or 'ai'
-        pieces: [
-          { pos: -1, homeSlot: 0, finished: false },
-          { pos: -1, homeSlot: 1, finished: false },
-          { pos: -1, homeSlot: 2, finished: false },
-          { pos: -1, homeSlot: 3, finished: false },
-          { pos: -1, homeSlot: 4, finished: false },
-          { pos: -1, homeSlot: 5, finished: false },
-          { pos: -1, homeSlot: 6, finished: false },
-          { pos: -1, homeSlot: 7, finished: false },
-        ],
+        type,
+        pieces: pcs,
         finishedCount: 0,
       });
     }
@@ -1327,7 +1414,7 @@ function startGame() {
   updateFloatDice();
 
   // If first player is AI, trigger
-  setTimeout(() => checkAI(), 600);
+  setTimeout(() => checkAI(), 0);
 }
 
 function updatePlayersPanel() {
@@ -1353,7 +1440,7 @@ function updatePlayersPanel() {
 
     const done = pl.finishedCount;
     const typeIcon = pl.type === 'ai' ? '🤖' : '👤';
-    const pct = Math.round((done / 8) * 100);
+    const pct = Math.round((done / pl.pieces.length) * 100);
 
     el.style.color = COLORS[pl.color].hex;
     el.innerHTML = `${typeIcon} ${pl.name}<br><span style="font-size:0.7em;color:#ccc">${pct}%</span>`;
@@ -1522,7 +1609,7 @@ function movePiece(pl, pieceIdx) {
       playSound('piece_done');
       showToast(`${pl.name} — Qayb ${pieceIdx + 1} guul! 🏆`);
 
-      if (pl.finishedCount === 8) {
+      if (pl.finishedCount === selectedPieceCount) {
         render();
         updatePlayersPanel();
         playSound('win');
@@ -1571,7 +1658,7 @@ function nextTurn() {
   // Skip finished players
   let next = (currentPlayer + 1) % players.length;
   let tries = 0;
-  while (players[next].finishedCount === 8 && tries < players.length) {
+  while (players[next].finishedCount === players[next].pieces.length && tries < players.length) {
     next = (next + 1) % players.length;
     tries++;
   }
@@ -1582,7 +1669,7 @@ function nextTurn() {
   updateTurnMsg();
   render();
 
-  setTimeout(() => checkAI(), 400);
+  setTimeout(() => checkAI(), 0);
 }
 
 function checkAI() {
@@ -1590,7 +1677,7 @@ function checkAI() {
   if (pl.type === 'ai' && !diceRolled) {
     setTimeout(() => {
       rollDice();
-    }, 900);
+    }, 600);
   }
 }
 
@@ -1616,7 +1703,7 @@ function aiAutoMove() {
       }
     });
 
-    setTimeout(() => movePiece(best.player, best.pieceIdx), 700);
+    setTimeout(() => movePiece(best.player, best.pieceIdx), 800);
   }
 }
 
@@ -1696,7 +1783,7 @@ window.afterRoll = function() {
   if (pl.type === 'ai') {
     aiAutoMove();
   } else if (movablePieces.length === 1) {
-    setTimeout(() => movePiece(movablePieces[0].player, movablePieces[0].pieceIdx), 500);
+    setTimeout(() => movePiece(movablePieces[0].player, movablePieces[0].pieceIdx), 800);
   }
 };
 
@@ -1791,7 +1878,7 @@ window.rollDice = function() {
       diceRolled = true;
       showDice(diceValue);
       window.afterRoll();
-    }, 300);
+    }, 600);
   } else {
     rollDiceFloat();
   }
